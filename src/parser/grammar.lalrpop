@@ -1,0 +1,304 @@
+grammar;
+use crate::ast::*;
+use crate::lexer::{
+    tokens::{LexingError, Token},
+    str_litteral::StringPart,
+};
+
+
+Comma<T>: Vec<T> = { 
+    <mut v: (<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => { v.push(e); v }
+    }
+};
+
+Param: (String, Option<String>) = {
+    <name:"identifier"> <ty:(":" <"identifier">)?> => (name.to_owned(), ty.map(|s| s.to_owned())),
+};
+
+
+Params: Vec<(String, Option<String>)> = { 
+    <params: Comma<Param>> => params,
+};
+
+
+
+
+pub Program: Program = {
+    "line_end"* <stmts: (<Statement> "line_end"*)*>  => Program { statements: stmts },
+};
+
+// Statements
+Statement: Statement = {
+    Let,
+    // Let,
+    // Match,
+    // Spawn,
+    // ForLoop,
+    // WhileLoop,
+    // <e:Expr> => Box::new(Statement::Expr(e)),
+};
+
+
+// FnDecl: Statement = {
+//     "fn" <name:"identifier"> "(" <params:Params> ")" <ret:("->" <"identifier">)?> "{" <body:Statement*> "}" => Statement::FnDecl {
+//         name: name.to_owned(),
+//         params,
+//         return_type: ret.map(|s| s.to_owned()),
+//         body: body,
+//     },
+// };
+
+
+Let: Statement = {
+    "let" <modifiers:Modifier*> <name:"identifier"> <ty:(":" <"identifier">)?>  "="  <value:Expr> => (Statement::Let {
+        atomic: modifiers.contains(&"atomic"),
+        lazy: modifiers.contains(&"lazy"),
+        mutable: modifiers.contains(&"mut"),
+        name: name,
+        ty: ty,
+        value: value,
+    }),
+};
+
+Modifier: &'static str = {
+    "atomic" => "atomic",
+    "lazy" => "lazy",
+    "mut" => "mut",
+};
+
+/*
+
+Match: Box<Statement<'_>> = {
+    "match" <expr:Expr> "{" <arms:MatchArm*> "}" => Box::new(Statement::Match {
+        expr: expr,
+        arms: arms,
+    }),
+};
+
+MatchArm: Box<MatchArm<'_>> = {
+    <pat:Pattern> "=>" <body:Statement> => Box::new(MatchArm {
+        pattern: pat,
+        body: body,
+    }),
+};
+
+Pattern: Box<Pattern<'_>> = {
+    <lit:Literal> => Box::new(Pattern::Literal(lit)),
+    <id:"identifier"> => Box::new(Pattern::Ident(id)),
+    "_" => Box::new(Pattern::Wildcard),
+};
+
+Spawn: Box<Statement<'_>> = {
+    "spawn" <params:("|" <Comma<"identifier">> "|")?> "{" <body:Statement*> "}" <with:("with" <Expr>)?> => Box::new(Statement::Spawn {
+        params: params.unwrap_or(vec![]),
+        body: body,
+        with: with,
+    }),
+};
+
+ForLoop: Box<Statement<'_>> = {
+    "for" <iterator:"identifier"> "in" <range:Expr> "{" <body:Statement*> "}" => Box::new(Statement::ForLoop {
+        iterator: iterator,
+        range: range,
+        body: body,
+    }),
+};
+
+WhileLoop: Box<Statement<'_>> = {
+    "while" <condition:Expr> "{" <body:Statement*> "}" => Box::new(Statement::WhileLoop {
+        condition: condition,
+        body: body,
+    }),
+};
+
+pub Expr: Box<Expr<'_>> = {
+    #[precedence(level="1")]
+    PrimaryExpr,
+
+    #[precedence(level="2")] #[assoc(side="right")]
+    "!" <expr:Expr> => {
+        Box::new(Expr::Unary(BinOp::Not, expr))
+    },
+    "-" <expr:Expr> => {
+        Box::new(Expr::Unary(BinOp::Minus, expr))
+    },
+
+    #[precedence(level="3")] #[assoc(side="left")]
+    <lhs:Expr> "*" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Multiply, rhs))
+    },
+    <lhs:Expr> "/" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Divide, rhs))
+    },
+    <lhs:Expr> "%" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Modulo, rhs))
+    },
+
+    #[precedence(level="4")] #[assoc(side="left")]
+    <lhs:Expr> "+" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Plus, rhs))
+    },
+    <lhs:Expr> "-" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Minus, rhs))
+    },
+
+    #[precedence(level="5")] #[assoc(side="left")]
+    <lhs:Expr> "==" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Eq, rhs))
+    },
+    <lhs:Expr> "!=" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Neq, rhs))
+    },
+    <lhs:Expr> "<" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Lt, rhs))
+    },
+    <lhs:Expr> "<=" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Le, rhs))
+    },
+    <lhs:Expr> ">" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Gt, rhs))
+    },
+    <lhs:Expr> ">=" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Ge, rhs))
+    },
+
+    #[precedence(level="6")] #[assoc(side="left")]
+    <lhs:Expr> "&&" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::And, rhs))
+    },
+
+    #[precedence(level="7")] #[assoc(side="left")]
+    <lhs:Expr> "||" <rhs:Expr> => {
+        Box::new(Expr::Binary(lhs, BinOp::Or, rhs))
+    },
+};
+
+pub PrimaryExpr: Box<Expr<'_>> = {
+    <lit:Literal> => {
+        Box::new(Expr::Literal(lit))
+    },
+    <id:"identifier"> => {
+        Box::new(Expr::Ident(id))
+    },
+    "(" <expr:Expr> ")" => expr,
+};
+
+*/
+pub Expr: Expr = {
+    <lit:Literal> => Expr::Literal(lit),
+    <id:"identifier"> => Expr::Ident(id),
+    "(" <expr:Expr> ")" => expr,
+};
+
+pub Literal: Literal = {
+    <lit:"int"> => (Literal::Int(lit)),
+    <lit:"float"> => (Literal::Float(lit)),
+    <lit:"string"> => (Literal::String(lit)),
+};
+
+
+extern {
+  type Location = usize;
+  type Error = LexingError;
+
+    enum Token {
+        // Keywords
+        "fn" => Token::Fn,
+        "let" => Token::Let,
+        "struct" => Token::Struct,
+        "if" => Token::If,
+        "elsif" => Token::Elsif,
+        "else" => Token::Else,
+        "spawn" => Token::Spawn,
+        "shared" => Token::Shared,
+        "with" => Token::With,
+        "atomic" => Token::Atomic,
+        "mut" => Token::Mut,
+        "match" => Token::Match,
+        "lazy" => Token::Lazy,
+        "inf" => Token::Inf,
+        "for" => Token::For,
+        "in" => Token::In,
+        "while" => Token::While,
+        "true" => Token::True,
+        "false" => Token::False,
+
+        // Identifiers
+        "identifier" => Token::Ident(<String>),
+
+        // Literals
+        "int" => Token::Int(<i32>),
+        "float" => Token::Float(<f64>),
+        "binary" => Token::Binary(<i32>),
+        "octal" => Token::Octal(<i32>),
+        "hex" => Token::Hex(<i32>),
+        "string" => Token::String(<Vec<StringPart>>),
+
+        // Symbols and operators
+        ":" => Token::Colon,
+        "->" => Token::Arrow,
+        "=>" => Token::ArrowFat,
+        "(" => Token::LParen,
+        ")" => Token::RParen,
+        "[" => Token::LBracket,
+        "]" => Token::RBracket,
+        "{" => Token::LBrace,
+        "}" => Token::RBrace,
+        "," => Token::Comma,
+        "." => Token::Dot,
+        ".." => Token::Range,
+        "_" => Token::Wildcard,
+
+        // Assignment operators
+        "=" => Token::Equals,
+        "+=" => Token::PlusEquals,
+        "-=" => Token::MinusEquals,
+        "*=" => Token::StarEquals,
+        "/=" => Token::SlashEquals,
+        "%=" => Token::PercentEquals,
+        "&=" => Token::AndEquals,
+        "|=" => Token::OrEquals,
+        "^=" => Token::XorEquals,
+        "<<=" => Token::ShlEquals,
+        ">>=" => Token::ShrEquals,
+
+        // Arithmetic operators
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "*" => Token::Star,
+        "/" => Token::Slash,
+        "%" => Token::Percent,
+
+        // Logical operators
+        "&&" => Token::And,
+        "||" => Token::Or,
+        "!" => Token::Not,
+
+        // Comparison operators
+        "==" => Token::EqualsEquals,
+        "!=" => Token::NotEquals,
+        "<" => Token::Less,
+        "<=" => Token::LessEquals,
+        ">" => Token::Greater,
+        ">=" => Token::GreaterEquals,
+
+        // Bitwise operators
+        "&" => Token::BitAnd,
+        "|" => Token::BitOr,
+        "^" => Token::BitXor,
+        "~" => Token::BitNot,
+        "<<" => Token::Shl,
+        ">>" => Token::Shr,
+
+        // Pipe operators
+        "|>" => Token::Pipe,
+
+        // Comments and whitespace
+        "line_comment" => Token::LineComment,
+        "block_comment" => Token::BlockComment,
+        "line_end" => Token::LineEnd,
+    }
+
+}

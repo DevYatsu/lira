@@ -1,20 +1,19 @@
-use logos::Logos;
-
-use super::{LexingError, Token};
+use super::{
+    Lexer,
+    tokens::{LexingError, Token},
+};
 
 // Modified StringPart to use borrowed string slices
-#[derive(Debug, PartialEq)]
-pub enum StringPart<'source> {
-    Text(&'source str),               // Regular text as a borrowed slice
-    EscapeChar(char),                 // Escaped character (\n, \t, etc.)
-    Unicode(char),                    // Unicode character from \uXXXX
-    Expression(TokenStream<'source>), // Interpolated expression #{expr} as a list of tokens
+#[derive(Debug, PartialEq, Clone)]
+pub enum StringPart {
+    Text(String),
+    EscapeChar(char),
+    Unicode(char),
+    Expression(Vec<(usize, Token, usize)>),
 }
 
 // Process string literal into categorized parts with interpolation support
-pub fn process_string_literal<'source>(
-    input: &'source str,
-) -> Result<Vec<StringPart<'source>>, LexingError> {
+pub fn process_string_literal(input: &'_ str) -> Result<Vec<StringPart>, LexingError> {
     let mut parts = Vec::new();
     let mut text_start = 0; // Track the start of the current text segment
     let mut chars = input.char_indices().peekable();
@@ -24,7 +23,7 @@ pub fn process_string_literal<'source>(
             '\\' => {
                 // Save any text before this escape sequence
                 if i > text_start {
-                    parts.push(StringPart::Text(&input[text_start..i]));
+                    parts.push(StringPart::Text(input[text_start..i].to_owned()));
                 }
 
                 // Get the next character for the escape sequence
@@ -93,7 +92,7 @@ pub fn process_string_literal<'source>(
                 if chars.peek().map(|(_, c)| *c) == Some('{') {
                     // Save any text before this interpolation
                     if i > text_start {
-                        parts.push(StringPart::Text(&input[text_start..i]));
+                        parts.push(StringPart::Text(input[text_start..i].to_owned()));
                     }
 
                     // Consume the '{'
@@ -150,45 +149,14 @@ pub fn process_string_literal<'source>(
 
     // Add any remaining text
     if text_start < input.len() {
-        parts.push(StringPart::Text(&input[text_start..]));
+        parts.push(StringPart::Text(input[text_start..].to_owned()));
     }
 
     Ok(parts)
 }
 
-fn parse_interpolated_expression(expr_str: &str) -> Result<TokenStream<'_>, LexingError> {
-    TokenStream::new(expr_str)
-}
-
-#[derive(Debug, PartialEq)]
-pub struct TokenStream<'source> {
-    tokens: Vec<Token<'source>>,
-}
-
-impl<'source> TokenStream<'source> {
-    // Create a new TokenStream from a string
-    pub fn new(expr_str: &'source str) -> Result<Self, LexingError> {
-        let mut lexer = Token::lexer(expr_str);
-        let mut tokens = Vec::new();
-
-        // Collect all tokens from the lexer
-        while let Some(token_result) = lexer.next() {
-            match token_result {
-                Ok(token) => tokens.push(token),
-                Err(err) => return Err(err.into()), // Convert lexer error to LexingError
-            }
-        }
-
-        Ok(TokenStream { tokens })
-    }
-
-    // Create an iterator over the tokens
-    pub fn iter(&self) -> std::slice::Iter<'_, Token<'source>> {
-        self.tokens.iter()
-    }
-
-    // Consume the TokenStream and return an iterator
-    pub fn into_iter(self) -> std::vec::IntoIter<Token<'source>> {
-        self.tokens.into_iter()
-    }
+fn parse_interpolated_expression(
+    expr_str: &str,
+) -> Result<Vec<(usize, Token, usize)>, LexingError> {
+    Lexer::new(expr_str).into_iter().collect()
 }
