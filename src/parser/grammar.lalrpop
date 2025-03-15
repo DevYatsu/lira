@@ -41,7 +41,7 @@ pub Program: Program = {
 Statement: Statement = {
     Let,
     FnDecl,
-    // Match,
+    Match,
     ForLoop,
     Break,
     WhileLoop,
@@ -105,28 +105,35 @@ Spawn: Statement = {
     },
 };
 
-
-/*
-
-Match: Box<Statement<'_>> = {
-    "match" <expr:Expr> "{" <arms:MatchArm*> "}" => Box::new(Statement::Match {
+Match: Statement = {
+    "match" skip <expr:Expr> skip "{" <arms:MatchArm*> skip "}" => Statement::Match {
         expr: expr,
         arms: arms,
-    }),
+    },
 };
 
-MatchArm: Box<MatchArm<'_>> = {
-    <pat:Pattern> "=>" <body:Statement> => Box::new(MatchArm {
-        pattern: pat,
-        body: body,
-    }),
+MatchArm: MatchArm = {
+    skip <pattern:Pattern> skip <guard:("if" skip <Expr> skip)?> "=>" skip <body:MatchBody>
+    => MatchArm {
+        pattern,
+        body,
+        guard
+    },
 };
 
-Pattern: Box<Pattern<'_>> = {
-    <lit:Literal> => Box::new(Pattern::Literal(lit)),
-    <id:"identifier"> => Box::new(Pattern::Ident(id)),
-    "_" => Box::new(Pattern::Wildcard),
+MatchBody: Vec<Statement> = {
+    <expr:Expr> skip "," => vec![Statement::Expr(expr)], 
+    "{" skip <stmts:block_body> "}" => stmts,
 };
+
+Pattern: Pattern = {
+    <lit:Literal> => Pattern::Literal(lit),
+    <id:"identifier"> => Pattern::Ident(id),
+    "_" => Pattern::Wildcard,
+};
+
+
+/*
 
 pub Expr: Box<Expr<'_>> = {
     #[precedence(level="1")]

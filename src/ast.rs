@@ -45,7 +45,8 @@ pub enum Statement {
 #[derive(Debug, PartialEq)]
 pub struct MatchArm {
     pub pattern: Pattern,
-    pub body: Statement,
+    pub body: Vec<Statement>,
+    pub guard: Option<Expr>,
 }
 
 #[derive(Debug, PartialEq)]
