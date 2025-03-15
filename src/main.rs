@@ -11,7 +11,7 @@ fn main() {
         .expect("Failed to read file")
         .repeat(1);
 
-    // let start = std::time::Instant::now();
+    let start = std::time::Instant::now();
 
     let lexer = Lexer::new(&source);
 
@@ -34,7 +34,7 @@ fn main() {
     //     }
     // }
 
-    // let end = std::time::Instant::now();
+    let end = std::time::Instant::now();
 
-    println!("Lexing completed successfully",);
+    println!("Lexing completed successfully in {}ms",(end-start).as_millis());
 }

@@ -38,7 +38,7 @@ Statement: Statement = {
     FnDecl,
     // Match,
     // Spawn,
-    // ForLoop,
+    ForLoop,
     // WhileLoop,
     // <e:Expr> => Box::new(Statement::Expr(e)),
 };
@@ -71,6 +71,14 @@ Modifier: &'static str =  {
     "mut" => "mut",
 };
 
+ForLoop: Statement = {
+    "for" skip <iterator:"identifier"> skip "in" skip <range:Expr> skip "{" skip <body:block_body> "}" => Statement::ForLoop {
+        iterator: iterator,
+        range: range,
+        body: body,
+    },
+};
+
 /*
 
 Match: Box<Statement<'_>> = {
@@ -98,14 +106,6 @@ Spawn: Box<Statement<'_>> = {
         params: params.unwrap_or(vec![]),
         body: body,
         with: with,
-    }),
-};
-
-ForLoop: Box<Statement<'_>> = {
-    "for" <iterator:"identifier"> "in" <range:Expr> "{" <body:Statement*> "}" => Box::new(Statement::ForLoop {
-        iterator: iterator,
-        range: range,
-        body: body,
     }),
 };
 
