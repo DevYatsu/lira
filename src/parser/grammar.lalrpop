@@ -16,10 +16,15 @@ Comma<T>: Vec<T> = {
 Param: (String, Option<String>) = {
     skip <name:"identifier"> skip <ty:(":" skip <"identifier"> skip)?> => (name.to_owned(), ty.map(|s| s.to_owned())),
 };
-
+Arg: Expr = {
+    skip <expr:Expr> skip => expr,
+};
 
 Params: Vec<(String, Option<String>)> = { 
     <params: Comma<Param>> => params,
+};
+Args: Vec<Expr> = { 
+    <args: Comma<Arg>> => args,
 };
 
 
@@ -37,10 +42,10 @@ Statement: Statement = {
     Let,
     FnDecl,
     // Match,
-    // Spawn,
     ForLoop,
     Break,
     WhileLoop,
+    Spawn,
 
     // <e:Expr> => Box::new(Statement::Expr(e)),
 };
@@ -75,22 +80,31 @@ Modifier: &'static str =  {
 
 ForLoop: Statement = {
     "for" skip <iterator:"identifier"> skip "in" skip <range:Expr> skip "{" skip <body:block_body> "}" => Statement::ForLoop {
-        iterator: iterator,
-        range: range,
-        body: body,
+        iterator,
+        range,
+        body,
     },
 };
 
 WhileLoop: Statement = {
     "while" skip <condition:Expr> skip "{" skip <body:block_body> "}" => Statement::WhileLoop {
-        condition: condition,
-        body: body,
+        condition,
+        body,
     },
 };
 
 Break: Statement = {
     "break" => Statement::Break,
 };
+
+
+Spawn: Statement = {
+    "spawn" skip "{" skip <body:block_body> "}" <with:("with" skip <Expr>)?> => Statement::Spawn {
+        body,
+        with,
+    },
+};
+
 
 /*
 
@@ -112,14 +126,6 @@ Pattern: Box<Pattern<'_>> = {
     <lit:Literal> => Box::new(Pattern::Literal(lit)),
     <id:"identifier"> => Box::new(Pattern::Ident(id)),
     "_" => Box::new(Pattern::Wildcard),
-};
-
-Spawn: Box<Statement<'_>> = {
-    "spawn" <params:("|" <Comma<"identifier">> "|")?> "{" <body:Statement*> "}" <with:("with" <Expr>)?> => Box::new(Statement::Spawn {
-        params: params.unwrap_or(vec![]),
-        body: body,
-        with: with,
-    }),
 };
 
 pub Expr: Box<Expr<'_>> = {
@@ -210,7 +216,6 @@ pub Literal: Literal = {
     <lit:"hex"> => (Literal::Int(lit)),
     <lit:"true"> => (Literal::Bool(true)),
     <lit:"false"> => (Literal::Bool(false)),
-    
 };
 
 

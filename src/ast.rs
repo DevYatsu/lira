@@ -26,7 +26,6 @@ pub enum Statement {
         arms: Vec<MatchArm>,
     },
     Spawn {
-        params: Vec<String>,
         body: Vec<Statement>,
         with: Option<Expr>,
     },

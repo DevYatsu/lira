@@ -7,3 +7,7 @@ let
     lazy 
     y = 2.5e1
 let lazy atomic a: Int = 51
+
+spawn {
+   let a = 2
+} with xxx

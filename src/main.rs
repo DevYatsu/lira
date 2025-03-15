@@ -7,7 +7,7 @@ pub(crate) mod lexer;
 mod parser;
 
 fn main() {
-    let source = fs::read_to_string("examples/fn.li")
+    let source = fs::read_to_string("examples/let.li")
         .expect("Failed to read file")
         .repeat(1);
 
