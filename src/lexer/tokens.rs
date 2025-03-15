@@ -78,7 +78,9 @@ pub enum Token {
     #[token("in")]
     In,
     #[token("while")]
-    While,
+    While,    
+    #[token("break")]
+    Break,
     #[token("true")]
     True,
     #[token("false")]

@@ -39,7 +39,9 @@ Statement: Statement = {
     // Match,
     // Spawn,
     ForLoop,
-    // WhileLoop,
+    Break,
+    WhileLoop,
+
     // <e:Expr> => Box::new(Statement::Expr(e)),
 };
 
@@ -79,6 +81,17 @@ ForLoop: Statement = {
     },
 };
 
+WhileLoop: Statement = {
+    "while" skip <condition:Expr> skip "{" skip <body:block_body> "}" => Statement::WhileLoop {
+        condition: condition,
+        body: body,
+    },
+};
+
+Break: Statement = {
+    "break" => Statement::Break,
+};
+
 /*
 
 Match: Box<Statement<'_>> = {
@@ -106,13 +119,6 @@ Spawn: Box<Statement<'_>> = {
         params: params.unwrap_or(vec![]),
         body: body,
         with: with,
-    }),
-};
-
-WhileLoop: Box<Statement<'_>> = {
-    "while" <condition:Expr> "{" <body:Statement*> "}" => Box::new(Statement::WhileLoop {
-        condition: condition,
-        body: body,
     }),
 };
 
@@ -199,6 +205,12 @@ pub Literal: Literal = {
     <lit:"int"> => (Literal::Int(lit)),
     <lit:"float"> => (Literal::Float(lit)),
     <lit:"string"> => (Literal::String(lit)),
+    <lit:"binary"> => (Literal::Int(lit)),
+    <lit:"octal"> => (Literal::Int(lit)),
+    <lit:"hex"> => (Literal::Int(lit)),
+    <lit:"true"> => (Literal::Bool(true)),
+    <lit:"false"> => (Literal::Bool(false)),
+    
 };
 
 
@@ -225,6 +237,7 @@ extern {
         "for" => Token::For,
         "in" => Token::In,
         "while" => Token::While,
+        "break" => Token::Break,
         "true" => Token::True,
         "false" => Token::False,
 

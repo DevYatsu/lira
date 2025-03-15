@@ -40,6 +40,7 @@ pub enum Statement {
         body: Vec<Statement>,
     },
     Expr(Expr),
+    Break
 }
 
 #[derive(Debug, PartialEq)]

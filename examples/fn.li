@@ -20,6 +20,10 @@ fn func1() {
     {
         let b = 2
     }
+
+    while true {
+        break;
+    }
 }
 fn func2 {}
 fn func3(a, b) {}
