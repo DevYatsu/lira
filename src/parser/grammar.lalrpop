@@ -99,7 +99,7 @@ Break: Statement = {
 
 
 Spawn: Statement = {
-    "spawn" skip "{" skip <body:block_body> "}" <with:("with" skip <Expr>)?> => Statement::Spawn {
+    "spawn" skip <with:("with" skip <Expr> skip)?>  "{" skip <body:block_body> "}" => Statement::Spawn {
         body,
         with,
     },
