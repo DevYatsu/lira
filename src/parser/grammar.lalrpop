@@ -14,7 +14,7 @@ Comma<T>: Vec<T> = {
 };
 
 Param: (String, Option<String>) = {
-    <name:"identifier"> <ty:(":" <"identifier">)?> => (name.to_owned(), ty.map(|s| s.to_owned())),
+    skip <name:"identifier"> skip <ty:(":" skip <"identifier"> skip)?> => (name.to_owned(), ty.map(|s| s.to_owned())),
 };
 
 
@@ -24,15 +24,18 @@ Params: Vec<(String, Option<String>)> = {
 
 
 
+block_body: Vec<Statement> = (<Statement> skip)*;
+skip = "line_end"*;
+
 
 pub Program: Program = {
-    "line_end"* <stmts: (<Statement> "line_end"*)*>  => Program { statements: stmts },
+    skip <stmts: block_body>  => Program { statements: stmts },
 };
 
 // Statements
 Statement: Statement = {
     Let,
-    // Let,
+    FnDecl,
     // Match,
     // Spawn,
     // ForLoop,
@@ -41,18 +44,18 @@ Statement: Statement = {
 };
 
 
-// FnDecl: Statement = {
-//     "fn" <name:"identifier"> "(" <params:Params> ")" <ret:("->" <"identifier">)?> "{" <body:Statement*> "}" => Statement::FnDecl {
-//         name: name.to_owned(),
-//         params,
-//         return_type: ret.map(|s| s.to_owned()),
-//         body: body,
-//     },
-// };
+FnDecl: Statement = {
+    "fn" skip <name:"identifier"> skip <params:("(" <Params> ")" skip)?> <ret:("->" skip <"identifier"> skip)?> "{" skip <body:block_body> "}" => Statement::FnDecl {
+        name: name.to_owned(),
+        params: params.unwrap_or(vec![]),
+        return_type: ret.map(|s| s.to_owned()),
+        body: body,
+    },
+};
 
 
 Let: Statement = {
-    "let" <modifiers:Modifier*> <name:"identifier"> <ty:(":" <"identifier">)?>  "="  <value:Expr> => (Statement::Let {
+    "let" <modifiers:(skip <Modifier>)*> skip <name:"identifier"> skip <ty:(":" skip <"identifier"> skip)?>  "=" skip <value:Expr> => (Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
         mutable: modifiers.contains(&"mut"),
@@ -62,7 +65,7 @@ Let: Statement = {
     }),
 };
 
-Modifier: &'static str = {
+Modifier: &'static str =  {
     "atomic" => "atomic",
     "lazy" => "lazy",
     "mut" => "mut",

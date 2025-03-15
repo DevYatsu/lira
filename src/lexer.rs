@@ -6,6 +6,7 @@ use tokens::{LexingError, Token};
 
 pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
+#[derive(Clone)]
 pub struct Lexer<'input> {
     token_stream: SpannedIter<'input, Token>,
 }

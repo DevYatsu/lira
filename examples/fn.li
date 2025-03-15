@@ -1,9 +1,20 @@
 
 
-fn parallel_sum(n: Int) -> Int {
+fn 
+    parallel_sum
+    (
+    n
+    :
+    Int
+    )
+    -> 
+    Int 
+    {
 
+    }
+
+fn func1() {
+    let atomic a = 2
 }
-
-fn func1() {}
 fn func2 {}
 fn func3(a, b) {}

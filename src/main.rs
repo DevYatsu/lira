@@ -7,13 +7,17 @@ pub(crate) mod lexer;
 mod parser;
 
 fn main() {
-    let source = fs::read_to_string("examples/let.li")
-        .expect("Failed to read file 'examples/one.li'")
+    let source = fs::read_to_string("examples/fn.li")
+        .expect("Failed to read file")
         .repeat(1);
 
     // let start = std::time::Instant::now();
 
     let lexer = Lexer::new(&source);
+
+    for t in lexer.clone() {
+        println!("{:?}", t);
+    }
 
     let parser = ProgramParser::new();
 

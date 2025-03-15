@@ -2,5 +2,8 @@
 
 let i = 2
 
-let atomic lazy y = 2.5e1
+let 
+    atomic 
+    lazy 
+    y = 2.5e1
 let lazy atomic a: Int = 51
