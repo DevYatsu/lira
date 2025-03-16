@@ -129,7 +129,7 @@ pub enum Token {
     Comma,
     #[token(".")]
     Dot,
-    #[token(".. ")]
+    #[token("..")]
     Range,
     #[token("_")]
     Wildcard,

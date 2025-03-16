@@ -38,6 +38,12 @@ pub enum Statement {
         condition: Expr,
         body: Vec<Statement>,
     },
+    If {
+        condition: Expr,
+        body: Vec<Statement>,
+        else_ifs: Vec<(Expr, Vec<Statement>)>,
+        else_body: Option<Vec<Statement>>,
+    },
     Expr(Expr),
     Return(Expr),
     Break,

@@ -30,12 +30,12 @@ while a > 0 {
 
 // Match expressions
 match x {
-    0 => 42
+    0 => 42,
     1 => {
         let y = 5
-        y * 2
+        return y * 2
     }
-    _ => -1
+    _ => -1,
 }
 
 // Spawning new threads
@@ -47,6 +47,7 @@ spawn {
 
 spawn with expensive_computation() {
     print("Spawned with computation result")
+    print()
 }
 
 // Break statement inside a loop
@@ -62,7 +63,7 @@ let value = (1 + 2) * 3
 let condition = true && false || (x > y)
 
 // Pipe operator test
-let piped = some_func() |> another_func() |> final_func()
+let piped = 2 |> some_func |> another_func |> final_func
 
 // Comments
 // Single line comment

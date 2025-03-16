@@ -46,6 +46,7 @@ Statement: Statement = {
     Break,
     WhileLoop,
     Spawn,
+    If,
     Return,
     ExprStmt
 };
@@ -141,6 +142,24 @@ Pattern: Pattern = {
     "_" => Pattern::Wildcard,
 };
 
+If: Statement = {
+    "if" skip <condition:Expr> skip "{" skip <body:block_body> "}" <else_ifs:ElseIf*> <else_body:Else?>
+    => Statement::If {
+        condition,
+        body,
+        else_ifs,
+        else_body,
+    },
+};
+
+ElseIf: (Expr, Vec<Statement>) = {
+    "elsif" skip <condition:Expr> skip "{" skip <body:block_body> "}" => (condition, body),
+};
+
+Else: Vec<Statement> = {
+    "else" skip "{" skip <body:block_body> "}" => body,
+};
+
 // Expressions in Lira
 pub Expr: Expr = {
     #[precedence(level = "1")]
@@ -171,6 +190,7 @@ pub Expr: Expr = {
     <lhs:Expr> "<=" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Le, Box::new(rhs)),
     <lhs:Expr> ">" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Gt, Box::new(rhs)),
     <lhs:Expr> ">=" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Ge, Box::new(rhs)),
+    <lhs:Expr> ".." <rhs:Expr> => Expr::Range(Box::new(lhs), Box::new(rhs)),
 
     #[precedence(level = "7")] #[assoc(side = "left")]
     <lhs:Expr> "&&" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::And, Box::new(rhs)),
