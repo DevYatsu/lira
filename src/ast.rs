@@ -39,7 +39,8 @@ pub enum Statement {
         body: Vec<Statement>,
     },
     Expr(Expr),
-    Break
+    Return(Expr),
+    Break,
 }
 
 #[derive(Debug, PartialEq)]
@@ -65,6 +66,9 @@ pub enum Expr {
     Call(Box<Expr>, Vec<Expr>),
     Block(Vec<Statement>),
     Range(Box<Expr>, Box<Expr>),
+    Assign(Box<Expr>, Box<Expr>),
+    Unary(UnaryOp, Box<Expr>),
+    FieldAccess(Box<Expr>, String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -93,7 +97,7 @@ impl From<bool> for Literal {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum BinOp {
     Plus,
     Minus,
@@ -113,4 +117,10 @@ pub enum BinOp {
     BitXor,
     ShiftLeft,
     ShiftRight,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum UnaryOp {
+    Not,
+    Minus,
 }

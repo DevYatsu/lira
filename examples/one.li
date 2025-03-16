@@ -30,5 +30,5 @@ fn main {
       x if x < 10 => puts "Even: #{x}",
       _ => break
     }
-  }  # Prints 0, 2, 4, 6, 8
+  }  // Prints 0, 2, 4, 6, 8
 }

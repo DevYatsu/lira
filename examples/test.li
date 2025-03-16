@@ -1,0 +1,86 @@
+// Function declarations
+fn main() {
+    let x = 42
+    let y: int = 10
+    let atomic z = 3
+    let lazy mut a = 5
+
+    let res = add(2, 3)
+    print(res)
+}
+
+fn add(a: int, b: int) -> int {
+    => a + b
+}
+
+// Variable declarations
+let a = 10
+let b: float = 2.5
+let atomic counter = 0
+let lazy cache = get_value()
+
+// Loops
+for i in 0..10 {
+    print(i)
+}
+
+while a > 0 {
+    a = a - 1
+}
+
+// Match expressions
+match x {
+    0 => 42
+    1 => {
+        let y = 5
+        y * 2
+    }
+    _ => -1
+}
+
+// Spawning new threads
+spawn {
+    let atomic x = 10
+    let atomic y = x * 2
+    print(y)
+}
+
+spawn with expensive_computation() {
+    print("Spawned with computation result")
+}
+
+// Break statement inside a loop
+while true {
+    if some_condition {
+        break
+    }
+}
+
+// Function calls and expressions
+let result = add(5, 10)
+let value = (1 + 2) * 3
+let condition = true && false || (x > y)
+
+// Pipe operator test
+let piped = some_func() |> another_func() |> final_func()
+
+// Comments
+// Single line comment
+
+/* 
+   Multi-line comment 
+   explaining something
+*/
+
+// Binary, Octal, Hex literals
+let bin = 0b1010
+let oct = 0o52
+let hex = 0x1F
+
+// String literals
+let text = "Hello, world!"
+let path = "/home/user/file.txt"
+
+// Complex expressions
+let complex = (a + b) * (c - d) / e % f
+let logic = !(true && false) || (x == y)

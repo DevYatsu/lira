@@ -78,7 +78,7 @@ pub enum Token {
     #[token("in")]
     In,
     #[token("while")]
-    While,    
+    While,
     #[token("break")]
     Break,
     #[token("true")]
@@ -113,8 +113,6 @@ pub enum Token {
     Colon,
     #[token("->")]
     Arrow,
-    #[token("=>")]
-    ArrowFat,
     #[token("(")]
     LParen,
     #[token(")")]
@@ -212,8 +210,11 @@ pub enum Token {
     #[token("|>")]
     Pipe,
 
+    #[regex("(=>|return)")]
+    Return,
+
     // Comments and whitespace
-    #[regex(r"#[^\n]*")]
+    #[regex(r"//[^\n]*")]
     LineComment,
     #[regex(r"/\*([^*]|\*[^/])*\*/")]
     BlockComment,
