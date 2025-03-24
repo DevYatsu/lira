@@ -13,20 +13,19 @@ Comma<T>: Vec<T> = {
     }
 };
 
-Param: (String, Option<String>) = {
-    skip <name:"identifier"> skip <ty:(":" skip <"identifier"> skip)?> => (name.to_owned(), ty.map(|s| s.to_owned())),
+Param: (String, Option<Type>) = {
+    skip <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
 };
 Arg: Expr = {
     skip <expr:Expr> skip => expr,
 };
 
-Params: Vec<(String, Option<String>)> = { 
+Params: Vec<(String, Option<Type>)> = { 
     <params: Comma<Param>> => params,
 };
 Args: Vec<Expr> = { 
     <args: Comma<Arg>> => args,
 };
-
 
 
 block_body: Vec<Statement> = (<Statement> skip)*;
@@ -55,30 +54,24 @@ Return: Statement = {
     "return" <expr:Expr> => Statement::Return(expr),
 };
 
-ExprStmt: Statement = {
-    <callee:"identifier"> "(" <args:Args> ")" => Statement::Expr(Expr::Call(Box::new(Expr::Ident(callee)), args)),
-    <lhs:"identifier"> "=" <rhs:Expr> => Statement::Expr(Expr::Assign(Box::new(Expr::Ident(lhs)), Box::new(rhs))),
-};
-
-
 FnDecl: Statement = {
-    "fn" skip <name:"identifier"> skip <params:("(" <Params> ")" skip)?> <ret:("->" skip <"identifier"> skip)?> "{" skip <body:block_body> "}" => Statement::FnDecl {
+    "fn" skip <name:"identifier"> skip <params:("(" <Params> ")" skip)?> <ret:("->" skip <Type> skip)?> "{" skip <body:block_body> "}" => Statement::FnDecl {
         name: name.to_owned(),
         params: params.unwrap_or(vec![]),
-        return_type: ret.map(|s| s.to_owned()),
+        return_type: ret,
         body: body,
     },
 };
 
 
 Let: Statement = {
-    "let" <modifiers:(skip <Modifier>)*> skip <name:"identifier"> skip <ty:(":" skip <"identifier"> skip)?>  "=" skip <value:Expr> => (Statement::Let {
+    "let" <modifiers:(skip <Modifier>)*> skip <name:"identifier"> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:Expr> => (Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
         mutable: modifiers.contains(&"mut"),
-        name: name,
-        ty: ty,
-        value: value,
+        name,
+        ty,
+        value,
     }),
 };
 
@@ -160,30 +153,41 @@ Else: Vec<Statement> = {
     "else" skip "{" skip <body:block_body> "}" => body,
 };
 
+TypeArg: Type = {
+    skip <ty:Type> skip => ty,
+};
+TypesList: Vec<Type> = { 
+    <args: Comma<TypeArg>> => args,
+};
+
+pub Type: Type = {
+    // #[precedence(level = "2")]
+    // <lhs:BasicType> "|" <rhs:BasicType> => Type::Union(Box::new(lhs), Box::new(rhs)),
+
+    #[precedence(level = "1")]
+    BasicType,
+};
+
+BasicType: Type = {
+    "[" <ty:TypesList> "]" => Type::Array(ty),
+    "(" <ty:TypesList> ")" => Type::Tuple(ty),
+    "fn" "(" <args:TypesList> ")" "->" <ret:Type> => Type::Function(args, Box::new(ret)),
+    <val:"identifier"> => Type::Ident(val.to_owned()),
+}
+
 // Expressions in Lira
 pub Expr: Expr = {
-    #[precedence(level = "1")]
-    Term,
+    // Precedence levels from lowest to highest
+    #[precedence(level = "10")] #[assoc(side = "left")]
+    <lhs:Expr> "|>" <rhs:Expr> => Expr::Pipe(Box::new(lhs), Box::new(rhs)),
 
-    #[precedence(level = "2")]
-    <callee:Expr> "(" <args:Args> ")" => Expr::Call(Box::new(callee), args),
-    <expr:Expr> "." <field:"identifier"> => Expr::FieldAccess(Box::new(expr), field.to_owned()),
+    #[precedence(level = "9")] #[assoc(side = "left")]
+    <lhs:Expr> "||" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Or, Box::new(rhs)),
 
-    #[precedence(level = "3")] #[assoc(side = "right")]
-    "!" <rhs:Expr> => Expr::Unary(UnaryOp::Not, Box::new(rhs)),
+    #[precedence(level = "8")] #[assoc(side = "left")]
+    <lhs:Expr> "&&" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::And, Box::new(rhs)),
 
-    "-" <rhs:Expr> => Expr::Unary(UnaryOp::Minus, Box::new(rhs)),
-
-    #[precedence(level = "4")] #[assoc(side = "left")]
-    <lhs:Expr> "*" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Multiply, Box::new(rhs)),
-    <lhs:Expr> "/" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Divide, Box::new(rhs)),
-    <lhs:Expr> "%" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Modulo, Box::new(rhs)),
-
-    #[precedence(level = "5")] #[assoc(side = "left")]
-    <lhs:Expr> "+" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Plus, Box::new(rhs)),
-    <lhs:Expr> "-" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Minus, Box::new(rhs)),
-
-    #[precedence(level = "6")] #[assoc(side = "left")]
+    #[precedence(level = "7")] #[assoc(side = "left")]
     <lhs:Expr> "==" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Eq, Box::new(rhs)),
     <lhs:Expr> "!=" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Neq, Box::new(rhs)),
     <lhs:Expr> "<" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Lt, Box::new(rhs)),
@@ -192,17 +196,41 @@ pub Expr: Expr = {
     <lhs:Expr> ">=" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Ge, Box::new(rhs)),
     <lhs:Expr> ".." <rhs:Expr> => Expr::Range(Box::new(lhs), Box::new(rhs)),
 
-    #[precedence(level = "7")] #[assoc(side = "left")]
-    <lhs:Expr> "&&" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::And, Box::new(rhs)),
+    #[precedence(level = "6")] #[assoc(side = "left")]
+    <lhs:Expr> "+" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Plus, Box::new(rhs)),
+    <lhs:Expr> "-" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Minus, Box::new(rhs)),
 
-    #[precedence(level = "8")] #[assoc(side = "left")]
-    <lhs:Expr> "||" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Or, Box::new(rhs)),
+    #[precedence(level = "5")] #[assoc(side = "left")]
+    <lhs:Expr> "*" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Multiply, Box::new(rhs)),
+    <lhs:Expr> "/" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Divide, Box::new(rhs)),
+    <lhs:Expr> "%" <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Modulo, Box::new(rhs)),
 
-    #[precedence(level = "9")] #[assoc(side = "left")]
-    <lhs:Expr> "|>" <rhs:Expr> => Expr::Pipe(Box::new(lhs), Box::new(rhs)),
+    #[precedence(level = "4")] #[assoc(side = "right")]
+    "!" <rhs:Expr> => Expr::Unary(UnaryOp::Not, Box::new(rhs)),
+    "-" <rhs:Expr> => Expr::Unary(UnaryOp::Minus, Box::new(rhs)),
 
-    #[precedence(level = "10")] #[assoc(side = "right")]
-    <lhs:Expr> "=" <rhs:Expr> => Expr::Assign(Box::new(lhs), Box::new(rhs)),
+    #[precedence(level = "1")]
+    PostfixExpr,
+
+    Closure,
+};
+
+ExprStmt: Statement = {
+    <lhs:LValue> "=" <rhs:Expr> => Statement::Expr(Expr::Assign(Box::new(lhs), Box::new(rhs))),
+    <base:"identifier"> "(" <args:Args> ")" => Statement::Expr(Expr::Call(Box::new(Expr::Ident(base.to_owned())), args)),
+};
+
+LValue: Expr = {
+    <base:LValue> "[" <index:Expr> "]" => Expr::Index(Box::new(base), Box::new(index)),
+    <base:LValue> "." <field:"identifier">  => Expr::FieldAccess(Box::new(base), field.to_owned()),
+    <val:"identifier"> => Expr::Ident(val.to_owned()),
+};
+
+// Postfix expressions (field access and function calls)
+PostfixExpr: Expr = {
+    <base:PostfixExpr> "." <field:"identifier"> => Expr::FieldAccess(Box::new(base), field.to_owned()),
+    <base:PostfixExpr> "(" <args:Args> ")" => Expr::Call(Box::new(base), args),
+    Term,
 };
 
 pub Term: Expr = {
@@ -219,8 +247,16 @@ pub Literal: Literal = {
     <val:"binary"> => Literal::Int(val),
     <val:"octal"> => Literal::Int(val),
     <val:"hex"> => Literal::Int(val),
-    <val:"true"> => Literal::Bool(true),
-    <val:"false"> => Literal::Bool(false),
+    "true" => Literal::Bool(true),
+    "false" => Literal::Bool(false),
+    "inf" => Literal::Inf,
+};
+
+Closure: Expr = {
+    "|" <params:Params> "|" "{" skip <body:block_body> "}" => Expr::Closure(
+        params,
+        body,
+    ),
 };
 
 

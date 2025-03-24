@@ -9,8 +9,8 @@ pub struct Program {
 pub enum Statement {
     FnDecl {
         name: String,
-        params: Vec<(String, Option<String>)>,
-        return_type: Option<String>,
+        params: Vec<(String, Option<Type>)>,
+        return_type: Option<Type>,
         body: Vec<Statement>,
     },
     Let {
@@ -18,7 +18,7 @@ pub enum Statement {
         lazy: bool,
         mutable: bool,
         name: String,
-        ty: Option<String>,
+        ty: Option<Type>,
         value: Expr,
     },
     Match {
@@ -70,11 +70,21 @@ pub enum Expr {
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Pipe(Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
-    Block(Vec<Statement>),
     Range(Box<Expr>, Box<Expr>),
     Assign(Box<Expr>, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
     FieldAccess(Box<Expr>, String),
+    Index(Box<Expr>, Box<Expr>),
+    Closure(Vec<(String, Option<Type>)>, Vec<Statement>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Type {
+    Ident(String),
+    Tuple(Vec<Type>),
+    Function(Vec<Type>, Box<Type>),
+    Array(Vec<Type>),
+    Union(Box<Type>, Box<Type>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -83,7 +93,6 @@ pub enum Literal {
     Float(f64),
     String(Vec<StringPart>),
     Inf,
-    NegativeInf,
     Bool(bool),
 }
 

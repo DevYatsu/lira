@@ -13,6 +13,12 @@ fn add(a: int, b: int) -> int {
     => a + b
 }
 
+fn adder(a, b) -> Fn {
+    => |a, b| {
+        return a + b
+    } 
+}
+
 // Variable declarations
 let a = 10
 let b: float = 2.5
