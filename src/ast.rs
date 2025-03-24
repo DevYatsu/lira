@@ -47,6 +47,36 @@ pub enum Statement {
     Expr(Expr),
     Return(Expr),
     Break,
+    TypeAlias {
+        name: String,
+        ty: Type,
+    },
+    Struct {
+        name: String,
+        fields: Vec<(String, Type)>,
+    },
+    Enum {
+        name: String,
+        variants: Vec<EnumVariant>,
+    },
+    // import stmt
+    Use {
+        path: Vec<String>,
+        alias: Option<String>,
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum EnumVariant {
+    Unit(String),
+    Tuple(String, Vec<Type>),
+    Struct(String, Vec<(String, Option<Type>)>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum EnumVariantData {
+    Tuple( Vec<Type>),
+    Struct( Vec<(String, Option<Type>)>),
 }
 
 #[derive(Debug, PartialEq)]

@@ -7,17 +7,17 @@ use crate::lexer::{
 
 
 Comma<T>: Vec<T> = { 
-    <mut v: (<T> ",")*> <e:T?> => match e {
+    skip <mut v: (<T> "," skip)*> <e:T?> => match e {
         None => v,
         Some(e) => { v.push(e); v }
     }
 };
 
 Param: (String, Option<Type>) = {
-    skip <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
+    <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
 };
 Arg: Expr = {
-    skip <expr:Expr> skip => expr,
+    <expr:Expr> skip => expr,
 };
 
 Params: Vec<(String, Option<Type>)> = { 
@@ -40,18 +40,83 @@ pub Program: Program = {
 Statement: Statement = {
     Let,
     FnDecl,
+    Break,
+    Return,
+    TypeAlias,
+    Struct,
+    Enum,
+    Use,
+
     Match,
     ForLoop,
-    Break,
     WhileLoop,
     Spawn,
     If,
-    Return,
     ExprStmt
 };
 
+TypeAlias: Statement = {
+    "typealias" <name:"identifier"> "=" <ty:Type> => Statement::TypeAlias {
+        name: name.to_owned(),
+        ty,
+    },
+};
+
+Use: Statement = {
+    "use" <path:Path> <alias:("as" <"identifier">)?> => Statement::Use {
+        path,
+        alias: alias.map(|s| s.to_owned()), // Convert Option<&str> to Option<String>
+    }
+};
+
+// Rust-like path (e.g., "foo::bar::baz" -> Vec["foo", "bar", "baz"])
+Path: Vec<String> = {
+    <head:"identifier"> "::" <tail:Path> => {
+        let mut vec = vec![head.to_owned()];
+        vec.extend(tail);
+        vec
+    },
+    <id:"identifier"> => {
+        let mut vec = Vec::new();
+        vec.push(id.to_owned());
+        vec
+    },
+};
+
+
+Struct: Statement = {
+    "struct" skip <name:"identifier"> "{" skip <fields:(<StructField> skip)*> "}" => Statement::Struct {
+        name: name.to_owned(),
+        fields,
+    },
+};
+
+StructField: (String, Type) = {
+    <name:"identifier"> skip ":" skip <ty:Type> skip "," => (name.to_owned(), ty),
+};
+
+Enum: Statement = {
+    "enum" skip <name:"identifier"> skip "{" <variants:Comma<EnumVariant>> "}" => Statement::Enum {
+        name: name.to_owned(),
+        variants,
+    },
+};
+
+EnumVariant: EnumVariant = {
+    <name:"identifier"> skip <data:(<EnumVariantData> skip)?>=> match data {
+        None => EnumVariant::Unit(name.to_owned()),
+        Some(EnumVariantData::Tuple(types)) => EnumVariant::Tuple(name.to_owned(), types),
+        Some(EnumVariantData::Struct(fields)) => EnumVariant::Struct(name.to_owned(), fields),
+    },
+};
+
+EnumVariantData: EnumVariantData = {
+    "(" <types:TypesList> ")" => EnumVariantData::Tuple(types),
+    "{" <fields:Params> "}" => EnumVariantData::Struct(fields),
+};
+
 Return: Statement = {
-    "return" <expr:Expr> => Statement::Return(expr),
+    "return" skip <expr:Expr> => Statement::Return(expr),
 };
 
 FnDecl: Statement = {
@@ -154,7 +219,7 @@ Else: Vec<Statement> = {
 };
 
 TypeArg: Type = {
-    skip <ty:Type> skip => ty,
+    <ty:Type> skip => ty,
 };
 TypesList: Vec<Type> = { 
     <args: Comma<TypeArg>> => args,
@@ -269,6 +334,12 @@ extern {
         "fn" => Token::Fn,
         "let" => Token::Let,
         "struct" => Token::Struct,
+        "enum" => Token::Enum,
+
+        "use" => Token::Use,
+        "as" => Token::As,
+        "::" => Token::DoubleColon,
+
         "if" => Token::If,
         "elsif" => Token::Elsif,
         "else" => Token::Else,
@@ -286,7 +357,7 @@ extern {
         "break" => Token::Break,
         "true" => Token::True,
         "false" => Token::False,
-
+        "typealias" => Token::TypeAlias,
         "return" => Token::Return,
 
         // Identifiers

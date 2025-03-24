@@ -53,6 +53,14 @@ pub enum Token {
     Struct,
     #[token("if")]
     If,
+    #[token("typealias")]
+    TypeAlias,
+    #[token("enum")]
+    Enum,
+    #[token("use")]
+    Use,
+    #[token("as")]
+    As,
     #[token("elsif")]
     Elsif,
     #[token("else")]
@@ -111,6 +119,8 @@ pub enum Token {
     // Symbols and operators
     #[token(":")]
     Colon,
+    #[token("::")]
+    DoubleColon,
     #[token("->")]
     Arrow,
     #[token("(")]
