@@ -220,8 +220,10 @@ pub enum Token {
     #[token("|>")]
     Pipe,
 
-    #[regex("(=>|return)")]
-    Return,
+    #[regex("(:>|return)")]
+    Return,    
+    #[regex("=>")]
+    MatchReturn,
 
     // Comments and whitespace
     #[regex(r"//[^\n]*")]

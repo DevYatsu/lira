@@ -10,11 +10,11 @@ fn main() {
     let args = std::env::args().collect::<Vec<_>>();
     let no_print = args.get(1).is_some();
 
-    let source = fs::read_to_string("examples/one.li")
+    let source = fs::read_to_string("examples/test.li")
         .expect("Failed to read file")
-        .repeat(1);
+        .repeat(1000);
 
-    let length = source.len();
+    let char_count = source.len(); 
 
     let start = std::time::Instant::now();
 
@@ -37,13 +37,16 @@ fn main() {
             }
         }
 
-        let end = std::time::Instant::now();
+        let duration = start.elapsed();
+        let millis = duration.as_secs_f64() * 1000.0;
+        let chars_per_sec = char_count as f64 / duration.as_secs_f64();
 
         println!(
-            "{} characters lexed and parse in {}ms",
-            length,
-            (end - start).as_millis()
+            "{} characters lexed and parse in {:.2} ms",
+            char_count,
+            millis
         );
+        println!("Throughput: {:.2} chars/sec", chars_per_sec)
     } else {
         println!("{:?}", result);
     }

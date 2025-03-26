@@ -27,13 +27,11 @@ fn main() {
 }
 
 fn add(a: int, b: int) -> int {
-    => a + b
+    :> a + b
 }
 
-fn adder(a, b) -> Fn {
-    => |a, b| {
-        return a + b
-    } 
+fn adder(a: int, b: int) -> Fn {
+    :> |a, b| a + b
 }
 
 // Variable declarations

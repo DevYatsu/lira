@@ -3,9 +3,8 @@ fn parallel_sum(n: Int) -> Int {
 
   let a = (1..n)
   a.par_each(|i| total.add(i))
-    
 
-  expr().test().test()
+  :> expr().test().test()
 }
 
 fn describe_flags(flags) {

@@ -9,3 +9,10 @@ logos = "0.15.0"
 
 [build-dependencies]
 lalrpop = "0.22.1"
+
+[profile.release]
+opt-level = 3            # Maximum speed
+lto = "fat"              # or "thin" for faster compile and somtimes faster runtime
+codegen-units = 1        # Slower compile, better cross-function optimization
+panic = "abort"          # Slightly smaller + faster runtime
+strip = "debuginfo"      # Strip debug info to reduce I/O overhead

@@ -17,7 +17,7 @@ Param: (String, Option<Type>) = {
     <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
 };
 Arg: Expr = {
-    <expr:Expr> skip => expr,
+    <expr:ExprOrClosure> skip => expr,
 };
 
 Params: Vec<(String, Option<Type>)> = { 
@@ -116,7 +116,7 @@ EnumVariantData: EnumVariantData = {
 };
 
 Return: Statement = {
-    "return" skip <expr:Expr> => Statement::Return(expr),
+    "return" skip <expr:ExprOrClosure> => Statement::Return(expr),
 };
 
 FnDecl: Statement = {
@@ -181,7 +181,7 @@ Match: Statement = {
 };
 
 MatchArm: MatchArm = {
-    skip <pattern:Pattern> skip <guard:("if" skip <Expr> skip)?> "return" skip <body:MatchBody>
+    skip <pattern:Pattern> skip <guard:("if" skip <Expr> skip)?> "=>" skip <body:MatchBody>
     => MatchArm {
         pattern,
         body,
@@ -192,6 +192,7 @@ MatchArm: MatchArm = {
 MatchBody: Vec<Statement> = {
     <expr:Expr> skip "," => vec![Statement::Expr(expr)], 
     "{" skip <stmts:block_body> "}" => stmts,
+    "break" skip "," => vec![Statement::Break],
 };
 
 Pattern: Pattern = {
@@ -240,6 +241,11 @@ BasicType: Type = {
     <val:"identifier"> => Type::Ident(val.to_owned()),
 }
 
+ExprOrClosure: Expr = {
+    Closure,
+    Expr,
+};
+
 // Expressions in Lira
 pub Expr: Expr = {
     // Precedence levels from lowest to highest
@@ -277,11 +283,8 @@ pub Expr: Expr = {
 
     #[precedence(level = "1")]
     PostfixExpr,
-
-    Closure,
 };
 
-// todo! add support for +=, -=, *=, /=, %=, &=
 ExprStmt: Statement = {
     <lhs:LValue> <op:AssignOp> skip <rhs:Expr> => Statement::Expr(Expr::Assign(Box::new(lhs), op, Box::new(rhs))),
     <AllowedAloneExpr> => Statement::Expr(<>),
@@ -347,9 +350,9 @@ Closure: Expr = {
 };
 ClosureBody: Vec<Statement> = {
     "{" skip <body:block_body> "}" => body,
-    <AllowedAloneExpr> => vec![Statement::Expr(<>)],
+    <Return> => vec![<>],
+    <Expr> => vec![Statement::Expr(<>)],
 };
-
 
 extern {
   type Location = usize;
@@ -385,6 +388,7 @@ extern {
         "false" => Token::False,
         "typealias" => Token::TypeAlias,
         "return" => Token::Return,
+        "=>" => Token::MatchReturn,
 
         // Identifiers
         "identifier" => Token::Ident(<String>),
