@@ -6,8 +6,6 @@ Instead of just reading theory, Lira lets you **read and tweak the actual code**
 
 No magic. No black boxes. Just step-by-step building blocks.
 
----
-
 ## 🧠 Why Build a Language?
 
 When you write code, you use languages like Python or Rust — but **how do these languages actually work?**
@@ -20,16 +18,12 @@ Lira helps you answer questions like:
 - How can we evaluate code like `1 + 2 * 3` correctly?
 - How would you implement `if`, `while`, or functions?
 
----
-
 ## ✨ Features
 
 - 🧾 Clean and readable syntax
 - 🧪 Expression evaluation and functions
 - 🧱 Written in idiomatic Rust
 - 💡 Structured to be beginner-friendly and hackable
-
----
 
 ## 🧱 The Layers of Lira
 
@@ -61,7 +55,7 @@ The **parser** figures out that 5 + 3 is a math expression, and that let x = ...
 
 It builds a tree from the tokens, called an Abstract Syntax Tree, we can represent it like this:
 
-```
+```bash
 Let
 ├── Name: "x"
 └── Value:
@@ -123,15 +117,13 @@ Eventually, we’ll support:
 
 👉 Why? This is the step where your language becomes alive.
 
-📌 What You Can Learn From This Project
+## 📌 What You Can Learn From This Project
 
 - How real languages tokenize and parse code
 - How ASTs are structured and evaluated
 - How interpreters are built in layers
 - How to design your own syntax
 - How languages evolve: from expressions to functions to full-blown programs
-
----
 
 ## 🛣️ Roadmap
 
@@ -169,8 +161,6 @@ This project is being built in clear, incremental steps — so you can learn how
 - Modules and imports
 - Optional: Bytecode compiler and virtual machine
 - Optional: JIT backend using Cranelift
-
----
 
 ## 🧰 Project Structure
 
