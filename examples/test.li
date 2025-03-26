@@ -86,7 +86,10 @@ let value = (1 + 2) * 3
 let condition = true && false || (x > y)
 
 // Pipe operator test
-let piped = 2 |> some_func |> another_func |> final_func
+let piped = 2 |> 
+        some_func |> 
+        another_func |> 
+        final_func
 
 // Comments
 // Single line comment
