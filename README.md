@@ -164,6 +164,7 @@ This project is being built in clear, incremental steps — so you can learn how
 
 ## 🧰 Project Structure
 
+```bash
 ├── src/
 │ ├── lexer.rs
 | ├── lexer/
@@ -178,6 +179,7 @@ This project is being built in clear, incremental steps — so you can learn how
 ├── README.md
 ├── examples/
 └──── test_files...
+```
 
 ## ❤️ Contributing
 
