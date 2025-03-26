@@ -1,29 +1,31 @@
 # 📚 Lira — A Learnable Language for Learning Compilers
 
-**Lira** is a small programming language designed for **beginners who want to understand how languages are made** — from source code to execution.
+**Lira** is a mini programming language written in Rust, built to teach you **how programming languages are made** — from your code to the computer actually running it.
 
-Instead of just reading theory, Lira lets you **read and tweak the actual code** of a working language. It’s written in Rust, and built in layers: **lexer → parser → AST → evaluator**.
+Lira isn’t just for reading about compilers. You’ll **see, run, and modify** the real code behind a working language.
 
-No magic. No black boxes. Just step-by-step building blocks.
+It’s like a **workshop for language creation** — hands-on, hackable, and beginner-friendly.
 
 ## 🧠 Why Build a Language?
 
-When you write code, you use languages like Python or Rust — but **how do these languages actually work?**
+Ever wondered:
 
-Lira helps you answer questions like:
+- How Python or Rust actually _work_?
+- How `1 + 2 * 3` turns into a number?
+- What "parsing" or "AST" really means?
+- How code gets executed, step by step?
 
-- How does code turn into something the computer understands?
-- What does it mean to "parse" something?
-- What is an abstract syntax tree (AST)?
-- How can we evaluate code like `1 + 2 * 3` correctly?
-- How would you implement `if`, `while`, or functions?
+Lira helps you understand the core pieces behind every language — by showing you **how to build your own**.
 
-## ✨ Features
+## ✨ What’s Inside
 
-- 🧾 Clean and readable syntax
-- 🧪 Expression evaluation and functions
-- 🧱 Written in idiomatic Rust
-- 💡 Structured to be beginner-friendly and hackable
+- 🧾 Clean, readable syntax
+- 🧠 Beginner-friendly design
+- 🦀 Written in idiomatic Rust
+- 🧱 Built in **layers**:  
+  `code → tokens → tree → result`
+
+You’ll learn how code is broken down, understood, and run — just like a real language does it.
 
 ## 🧱 The Layers of Lira
 
@@ -108,7 +110,7 @@ For `5 + 3`, we:
 - Apply the + operator
 - Return 8
 
-Eventually, we’ll support:
+Lira will grow to support:
 
 - Variables
 - Functions
