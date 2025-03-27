@@ -213,6 +213,7 @@ If: Statement = {
 
 ElseIf: (Expr, Vec<Statement>) = {
     "elsif" skip <condition:Expr> skip "{" skip <body:block_body> "}" => (condition, body),
+    "else" skip "if" skip <condition:Expr> skip "{" skip <body:block_body> "}" => (condition, body),
 };
 
 Else: Vec<Statement> = {
@@ -227,17 +228,14 @@ TypesList: Vec<Type> = {
 };
 
 pub Type: Type = {
-    // #[precedence(level = "2")]
-    // <lhs:BasicType> "|" <rhs:BasicType> => Type::Union(Box::new(lhs), Box::new(rhs)),
-
-    #[precedence(level = "1")]
+    // <lhs:Type> "|" <rhs:BasicType> => Type::Union(Box::new(lhs), Box::new(rhs)),
     BasicType,
 };
 
 BasicType: Type = {
     "[" <ty:TypesList> "]" => Type::Array(ty),
     "(" <ty:TypesList> ")" => Type::Tuple(ty),
-    "fn" "(" <args:TypesList> ")" "->" <ret:Type> => Type::Function(args, Box::new(ret)),
+    "(" <args:TypesList> ")" ":" skip <ret:Type> => Type::Function(args, Box::new(ret)),
     <val:"identifier"> => Type::Ident(val.to_owned()),
 }
 
@@ -249,17 +247,30 @@ ExprOrClosure: Expr = {
 // Expressions in Lira
 pub Expr: Expr = {
     // Precedence levels from lowest to highest
-    #[precedence(level = "10")] #[assoc(side = "left")]
+
+    #[precedence(level = "11")] #[assoc(side = "left")]
     <lhs:Expr> "|>" skip <rhs:Expr> => Expr::Pipe(Box::new(lhs), Box::new(rhs)),
 
-    #[precedence(level = "9")] #[assoc(side = "left")]
+    #[precedence(level = "10")] #[assoc(side = "left")]
     <lhs:Expr> "||" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Or, Box::new(rhs)),
 
-    // todo! add support for ^, ~, <<, >>
-    #[precedence(level = "8")] #[assoc(side = "left")]
+    #[precedence(level = "9")] #[assoc(side = "left")]
     <lhs:Expr> "&&" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::And, Box::new(rhs)),
 
+    #[precedence(level = "8")] #[assoc(side = "left")]
+    <lhs:Expr> "|" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::BitOr, Box::new(rhs)),
+
     #[precedence(level = "7")] #[assoc(side = "left")]
+    <lhs:Expr> "^" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::BitXor, Box::new(rhs)),
+
+    #[precedence(level = "6")] #[assoc(side = "left")]
+    <lhs:Expr> "&" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::BitAnd, Box::new(rhs)),
+
+    #[precedence(level = "5")] #[assoc(side = "left")]
+    <lhs:Expr> "<<" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::ShiftLeft, Box::new(rhs)),
+    <lhs:Expr> ">>" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::ShiftRight, Box::new(rhs)),
+
+    #[precedence(level = "4")] #[assoc(side = "left")]
     <lhs:Expr> "==" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Eq, Box::new(rhs)),
     <lhs:Expr> "!=" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Neq, Box::new(rhs)),
     <lhs:Expr> "<" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Lt, Box::new(rhs)),
@@ -268,20 +279,21 @@ pub Expr: Expr = {
     <lhs:Expr> ">=" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Ge, Box::new(rhs)),
     <lhs:Expr> ".." skip <rhs:Expr> => Expr::Range(Box::new(lhs), Box::new(rhs)),
 
-    #[precedence(level = "6")] #[assoc(side = "left")]
+    #[precedence(level = "3")] #[assoc(side = "left")]
     <lhs:Expr> "+" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Plus, Box::new(rhs)),
     <lhs:Expr> "-" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Minus, Box::new(rhs)),
 
-    #[precedence(level = "5")] #[assoc(side = "left")]
+    #[precedence(level = "2")] #[assoc(side = "left")]
     <lhs:Expr> "*" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Multiply, Box::new(rhs)),
     <lhs:Expr> "/" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Divide, Box::new(rhs)),
     <lhs:Expr> "%" skip <rhs:Expr> => Expr::Binary(Box::new(lhs), BinOp::Modulo, Box::new(rhs)),
 
-    #[precedence(level = "4")] #[assoc(side = "right")]
+    #[precedence(level = "1")] #[assoc(side = "right")]
     "!" <rhs:Expr> => Expr::Unary(UnaryOp::Not, Box::new(rhs)),
     "-" <rhs:Expr> => Expr::Unary(UnaryOp::Minus, Box::new(rhs)),
+    "~" <rhs:Expr> => Expr::Unary(UnaryOp::BitNot, Box::new(rhs)),
 
-    #[precedence(level = "1")]
+    #[precedence(level = "0")]
     PostfixExpr,
 };
 

@@ -30,7 +30,8 @@ fn add(a: int, b: int) -> int {
     :> a + b
 }
 
-fn adder(a: int, b: int) -> Fn {
+typealias AdderT = (int, int): int
+fn adder(a: int, b: int) -> AdderT {
     :> |a, b| a + b
 }
 

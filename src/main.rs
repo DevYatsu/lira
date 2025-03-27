@@ -12,7 +12,7 @@ fn main() {
 
     let source = fs::read_to_string("examples/test.li")
         .expect("Failed to read file")
-        .repeat(1000);
+        .repeat(1);
 
     let char_count = source.len(); 
 
