@@ -10,9 +10,9 @@ fn main() {
     let args = std::env::args().collect::<Vec<_>>();
     let no_print = args.get(1).is_some();
 
-    let source = fs::read_to_string("examples/let.li")
+    let source = fs::read_to_string("examples/test.li")
         .expect("Failed to read file")
-        .repeat(1);
+        .repeat(1000);
 
     let char_count = source.len(); 
 

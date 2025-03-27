@@ -20,7 +20,7 @@ fn main() {
     let x = 42
     let y: int = 10
     let atomic z = 3
-    let lazy mut a = 5
+    let lazy mut a = ((5))
 
     let res = add(2, 3)
     print(res)

@@ -106,12 +106,13 @@ pub enum Expr {
     Literal(Literal),
     Ident(String),
     Array(Vec<Expr>),
+
+    // parenthesized expression is a tuple
     Tuple(Vec<Expr>),
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Pipe(Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
     Range(Box<Expr>, Box<Expr>),
-    Parenthesized(Box<Expr>),
     Assign(Box<Expr>, BinOp, Box<Expr>),
     Unary(UnaryOp, Box<Expr>),
     FieldAccess(Box<Expr>, String),

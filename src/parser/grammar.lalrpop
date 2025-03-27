@@ -17,7 +17,7 @@ Param: (String, Option<Type>) = {
     <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
 };
 Arg: Expr = {
-    <expr:ExprOrWithoutOperator> skip => expr,
+    <expr:ExprOrClosure> skip => expr,
 };
 
 Params: Vec<(String, Option<Type>)> = { 
@@ -116,7 +116,7 @@ EnumVariantData: EnumVariantData = {
 };
 
 Return: Statement = {
-    "return" skip <expr:ExprOrWithoutOperator> => Statement::Return(expr),
+    "return" skip <expr:ExprOrClosure> => Statement::Return(expr),
 };
 
 FnDecl: Statement = {
@@ -130,7 +130,7 @@ FnDecl: Statement = {
 
 
 Let: Statement = {
-    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:ExprOrWithoutOperator> => (Statement::Let {
+    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:ExprOrClosure> => (Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
         mutable: modifiers.contains(&"mut"),
@@ -253,10 +253,8 @@ BasicType: Type = {
     <val:"identifier"> => Type::Ident(val.to_owned()),
 }
 
-ExprOrWithoutOperator: Expr = {
+ExprOrClosure: Expr = {
     Closure,
-    "[" <args:Args> "]" => Expr::Array(args),
-    "(" <args:Args> ")" => Expr::Tuple(args),
     Expr,
 };
 
@@ -353,6 +351,8 @@ PostfixExpr: Expr = {
 
 pub Term: Expr = {
     <val:Literal> => Expr::Literal(val),
+    "[" <args:Args> "]" => Expr::Array(args),
+    "(" <args:Args> ")" => Expr::Tuple(args),
     <val:"identifier"> => Expr::Ident(val.to_owned()),
 };
 
