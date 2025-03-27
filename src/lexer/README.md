@@ -157,17 +157,20 @@ Best for small, simple languages or learning exercises.
 Parser combinators let you build parsers by composing small, reusable functions. They’re flexible and expressive, often parsing directly to an AST without a separate lexing step.
 
 **Options**
+
 Nom: Mature, battle-tested, and fast, with a focus on zero-copy parsing.
 Winnow: A lightweight fork of Nom, emphasizing simplicity and performance.
 Chumsky: Modern, ergonomic, and great for error reporting; ideal for prototyping.
 Yap: Minimalist and flexible, though less feature-rich.
 
 **Pros**
+
 ✅ Intuitive, functional programming style.
 ✅ Good error messages (especially Chumsky).
 ✅ Single-step parsing (no lexing phase).
 
 **Cons**
+
 ❌ Can be slower than Logos + LALRPOP (not necessarily problematic).
 ❌ Steeper learning curve for complex grammars.
 
@@ -178,15 +181,18 @@ Best for medium-complexity languages or when you want rapid development with dec
 Parsing Expression Grammar (PEG) libraries offer a declarative way to define grammars, often with built-in support for direct AST generation. They’re more powerful than Logos’ regex but less rigid than LALRPOP’s LR(1).
 
 **Options**
+
 Peg: Simple, generates Rust code at compile time, good for small projects.
 Pest: Feature-rich, with a custom grammar syntax and strong tooling (e.g., error reporting).
 
 **Pros**
+
 ✅ Expressive grammar syntax (supports lookahead, unlike Logos).
 ✅ Single-pass parsing to AST.
 ✅ Easier to read and maintain than manual code.
 
 **Cons**
+
 ❌ Slower than Logos (typically 5-20M chars/sec, which is usually good enough though).
 ❌ PEG can be ambiguous or memory-hungry for large inputs.
 
