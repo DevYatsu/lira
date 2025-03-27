@@ -126,7 +126,6 @@ pub enum Type {
     Tuple(Vec<Type>),
     Function(Vec<Type>, Box<Type>),
     Array(Vec<Type>),
-    Union(Box<Type>, Box<Type>),
 }
 
 #[derive(Debug, PartialEq)]
