@@ -49,6 +49,9 @@ This is like turning a sentence into words and punctuation. We use the [`logos`]
 
 👉 **Why lexing?** Because computers don’t understand code the way humans do. Lexing breaks the raw text into simple, meaningful pieces — like words and symbols — that are easier for the next stage (the parser) to work with.
 
+[!NOTE]
+See detailed information about how lexing works [here](./src/lexer/README.md)
+
 ## 2. 🧾 Parsing — Understanding structure
 
 Now that we have tokens, we need to figure out the structure of the code.
@@ -78,6 +81,9 @@ Expr: RustExpr = {
 This just serves as an example, this code is not present in the lira source code.
 
 👉 **Why parsing?** Because a list of tokens doesn’t tell us how they relate to each other. Parsing organizes tokens into a tree-like structure, so the interpreter knows what to do — like which operation to run first, or which code belongs inside a function or loop.
+
+[!NOTE]
+See detailed information about how parsing works [here](./src/lexer/README.md)
 
 ## 3. 🌳 AST (Abstract Syntax Tree) — The heart of the language
 
