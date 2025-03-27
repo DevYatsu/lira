@@ -221,7 +221,7 @@ pub enum Token {
     Pipe,
 
     #[regex("(:>|return)")]
-    Return,    
+    Return,
     #[regex("=>")]
     MatchReturn,
 

@@ -46,7 +46,7 @@ Statement: Statement = {
     Struct,
     Enum,
     Use,
-    Match,
+    MatchStmt,
     ForLoop,
     WhileLoop,
     Spawn,
@@ -130,14 +130,14 @@ FnDecl: Statement = {
 
 
 Let: Statement = {
-    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:ExprOrClosure> => (Statement::Let {
+    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:ExprOrClosure> => Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
         mutable: modifiers.contains(&"mut"),
         name,
         ty,
         value,
-    }),
+    }
 };
 
 LetName: LetName = {
@@ -187,13 +187,23 @@ Spawn: Statement = {
     },
 };
 
-Match: Statement = {
-    "match" skip <expr:Expr> skip "{" <arms:MatchArm*> skip "}" => Statement::Match {
-        expr: expr,
-        arms: arms,
+
+Match: Match = {
+    "match" skip <expr:Expr> skip "{" <arms:MatchArm*> skip "}" => Match {
+        expr,
+        arms,
     },
 };
 
+MatchExpr: Expr = {
+   Match => Expr::Match(Box::new(<>))
+}
+
+MatchStmt: Statement = {
+    Match => Statement::Match(<>)
+}
+
+// need to add destructuring of enums
 MatchArm: MatchArm = {
     skip <pattern:Pattern> skip <guard:("if" skip <Expr> skip)?> "=>" skip <body:MatchBody>
     => MatchArm {
@@ -211,7 +221,9 @@ MatchBody: Vec<Statement> = {
 
 Pattern: Pattern = {
     <lit:Literal> => Pattern::Literal(lit),
-    <id:"identifier"> => Pattern::Ident(id),
+    <id:"identifier"> "(" <args:Comma<"identifier">> ")" => Pattern::FunctionDestructor(id, args),
+    <id:"identifier"> "{" <fields:Comma<StructFieldDestructure>> "}" => Pattern::StructLikeDestructor(id, fields),
+    <id:"identifier"> => Pattern::Ident(id),    
     "_" => Pattern::Wildcard,
 };
 
@@ -254,6 +266,7 @@ BasicType: Type = {
 }
 
 ExprOrClosure: Expr = {
+    MatchExpr,
     Closure,
     Expr,
 };

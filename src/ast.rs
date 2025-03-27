@@ -21,10 +21,7 @@ pub enum Statement {
         ty: Option<Type>,
         value: Expr,
     },
-    Match {
-        expr: Expr,
-        arms: Vec<MatchArm>,
-    },
+    Match(Match),
     Spawn {
         body: Vec<Statement>,
         with: Option<Expr>,
@@ -63,7 +60,13 @@ pub enum Statement {
     Use {
         path: Vec<String>,
         alias: Option<String>,
-    }
+    },
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Match {
+    pub expr: Expr,
+    pub arms: Vec<MatchArm>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -83,8 +86,8 @@ pub enum EnumVariant {
 
 #[derive(Debug, PartialEq)]
 pub enum EnumVariantData {
-    Tuple( Vec<Type>),
-    Struct( Vec<(String, Option<Type>)>),
+    Tuple(Vec<Type>),
+    Struct(Vec<(String, Option<Type>)>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -98,6 +101,8 @@ pub struct MatchArm {
 pub enum Pattern {
     Literal(Literal),
     Ident(String),
+    FunctionDestructor(String, Vec<String>),
+    StructLikeDestructor(String, Vec<(String, Option<String>)>),
     Wildcard,
 }
 
@@ -106,6 +111,7 @@ pub enum Expr {
     Literal(Literal),
     Ident(String),
     Array(Vec<Expr>),
+    Match(Box<Match>),
 
     // parenthesized expression is a tuple
     Tuple(Vec<Expr>),
@@ -179,5 +185,5 @@ pub enum BinOp {
 pub enum UnaryOp {
     Not,
     Minus,
-    BitNot
+    BitNot,
 }

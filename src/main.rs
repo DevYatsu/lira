@@ -14,7 +14,7 @@ fn main() {
         .expect("Failed to read file")
         .repeat(1000);
 
-    let char_count = source.len(); 
+    let char_count = source.len();
 
     let start = std::time::Instant::now();
 
@@ -43,8 +43,7 @@ fn main() {
 
         println!(
             "{} characters lexed and parse in {:.2} ms",
-            char_count,
-            millis
+            char_count, millis
         );
         println!("Throughput: {:.2} chars/sec", chars_per_sec)
     } else {
