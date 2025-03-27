@@ -17,7 +17,7 @@ pub enum Statement {
         atomic: bool,
         lazy: bool,
         mutable: bool,
-        name: String,
+        name: LetName,
         ty: Option<Type>,
         value: Expr,
     },
@@ -67,6 +67,14 @@ pub enum Statement {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum LetName {
+    Ident(String),
+    ArrayDestructure(Vec<LetName>),
+    TupleDestructure(Vec<LetName>),
+    StructDestructure(String, Vec<(String, Option<String>)>),
+}
+
+#[derive(Debug, PartialEq)]
 pub enum EnumVariant {
     Unit(String),
     Tuple(String, Vec<Type>),
@@ -97,6 +105,8 @@ pub enum Pattern {
 pub enum Expr {
     Literal(Literal),
     Ident(String),
+    Array(Vec<Expr>),
+    Tuple(Vec<Expr>),
     Binary(Box<Expr>, BinOp, Box<Expr>),
     Pipe(Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),

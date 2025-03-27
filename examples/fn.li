@@ -14,7 +14,7 @@ fn
     }
 
 fn func1() {
-    let atomic a = 2
+    let mut atomic a = 2
 
     for i in a
     {

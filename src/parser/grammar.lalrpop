@@ -17,7 +17,7 @@ Param: (String, Option<Type>) = {
     <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
 };
 Arg: Expr = {
-    <expr:ExprOrClosure> skip => expr,
+    <expr:ExprOrWithoutOperator> skip => expr,
 };
 
 Params: Vec<(String, Option<Type>)> = { 
@@ -116,7 +116,7 @@ EnumVariantData: EnumVariantData = {
 };
 
 Return: Statement = {
-    "return" skip <expr:ExprOrClosure> => Statement::Return(expr),
+    "return" skip <expr:ExprOrWithoutOperator> => Statement::Return(expr),
 };
 
 FnDecl: Statement = {
@@ -130,7 +130,7 @@ FnDecl: Statement = {
 
 
 Let: Statement = {
-    "let" <modifiers:(skip <Modifier>)*> skip <name:"identifier"> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:Expr> => (Statement::Let {
+    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:ExprOrWithoutOperator> => (Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
         mutable: modifiers.contains(&"mut"),
@@ -138,6 +138,20 @@ Let: Statement = {
         ty,
         value,
     }),
+};
+
+LetName: LetName = {
+    <name:"identifier"> => LetName::Ident(name.to_owned()),
+    "(" <names:Comma<LetName>> ")" => LetName::TupleDestructure(names),
+    "[" <names:Comma<LetName>> "]" => LetName::ArrayDestructure(names),
+    "struct" skip <name:"identifier"> skip "{" <fields:Comma<StructFieldDestructure>> "}" => LetName::StructDestructure(
+        name.to_owned(),
+        fields,
+    ),
+};
+
+StructFieldDestructure: (String, Option<String>) = {
+    <name:"identifier"> <new_name:(skip ":" skip <"identifier">)?> => (name.to_owned(), new_name.map(|s| s.to_owned())),
 };
 
 Modifier: &'static str =  {
@@ -239,8 +253,10 @@ BasicType: Type = {
     <val:"identifier"> => Type::Ident(val.to_owned()),
 }
 
-ExprOrClosure: Expr = {
+ExprOrWithoutOperator: Expr = {
     Closure,
+    "[" <args:Args> "]" => Expr::Array(args),
+    "(" <args:Args> ")" => Expr::Tuple(args),
     Expr,
 };
 
@@ -338,7 +354,6 @@ PostfixExpr: Expr = {
 pub Term: Expr = {
     <val:Literal> => Expr::Literal(val),
     <val:"identifier"> => Expr::Ident(val.to_owned()),
-    "(" <expr:Expr> ")" => expr,
 };
 
 // Primary Terms (Literals, Variables, Parentheses)
