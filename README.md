@@ -83,7 +83,7 @@ This just serves as an example, this code is not present in the lira source code
 👉 **Why parsing?** Because a list of tokens doesn’t tell us how they relate to each other. Parsing organizes tokens into a tree-like structure, so the interpreter knows what to do — like which operation to run first, or which code belongs inside a function or loop.
 
 > [!NOTE]
-> See detailed information about how parsing works [here](./src/lexer/README.md)
+> See detailed information about how parsing works [here](./src/parser/README.md)
 
 ## 3. 🌳 AST (Abstract Syntax Tree) — The heart of the language
 
