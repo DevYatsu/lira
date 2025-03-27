@@ -1,0 +1,18 @@
+use std::Json
+use std::Fs
+
+let PATH = "./file"
+
+let mut content = Fs.read(PATH)
+
+let parsed = match Json.parse(content) {
+    Ok(x) => {
+        :> x
+    }
+    Err(e) => {
+        eprint("Error when parsing content")
+        exit(1)
+    }
+}
+
+print(parsed)
