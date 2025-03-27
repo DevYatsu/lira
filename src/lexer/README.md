@@ -33,12 +33,62 @@ pub enum Token {
 }
 ```
 
-### What Happens?
+## What Happens?
 
 - logos turns this enum into a state machine (DFA).
 - It reads your source string character-by-character.
 - Each regex or token rule matches in priority order (top to bottom).
 - For regexes like numbers, you can attach custom logic to parse into a value (i64, f64, etc).
+
+### But what is DFA ?
+
+A **state machine** is a system that:
+
+- Has a set of **states** (e.g., "start", "reading number", "done")
+- Reads input **one character at a time**
+- **Transitions** between states based on the current character
+- **Recognizes** when it has matched a valid token
+
+Think of it like a character-level flowchart for pattern recognition.
+
+### ✅ Deterministic Finite Automaton (DFA)
+
+`logos` builds a **DFA** for your token rules. That means:
+
+- It **knows exactly** what state to move to for each input
+- **No backtracking** — just go forward, one char at a time
+- It’s built and optimized at compile-time (zero-cost abstraction)
+
+### 🔄 Example: Matching an Identifier
+
+Let’s say you define:
+
+```rust
+#[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
+Identifier
+```
+
+The underlying DFA works like this:
+
+```bash
+START
+  ├─ 'a'..'z' or 'A'..'Z' or '_' → IDENT
+IDENT
+  ├─ 'a'..'z' or 'A'..'Z' or '0'..'9' or '_' → stay in IDENT
+  └─ other → END (emit Token::Identifier)
+```
+
+- It begins in START
+- On a valid first char, transitions to IDENT
+- Continues reading valid chars
+- Once a non-matching char appears → it stops, returns the matched slice
+
+### 🧬 Multiple Tokens = Priority Ordered DFA
+
+logos takes all your token rules and merges their DFAs into a master automaton.
+
+- In the case of logos, the longest matched patterns wins ([better explained here](https://logos.maciej.codes/token-disambiguation.html))
+- Regex rules are resolved into state transitions
 
 ## 🚀 Why Use logos?
 
@@ -118,7 +168,7 @@ Yap: Minimalist and flexible, though less feature-rich.
 ✅ Single-step parsing (no lexing phase).
 
 **Cons**
-❌ Can be slower than Logos + LALRPOP (e.g., 1-10M chars/sec vs. 37M).
+❌ Can be slower than Logos + LALRPOP (not necessarily problematic).
 ❌ Steeper learning curve for complex grammars.
 
 Best for medium-complexity languages or when you want rapid development with decent performance.
