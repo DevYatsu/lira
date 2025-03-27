@@ -85,14 +85,14 @@ Path: Vec<String> = {
 
 
 Struct: Statement = {
-    "struct" skip <name:"identifier"> "{" skip <fields:(<StructField> skip)*> "}" => Statement::Struct {
+    "struct" skip <name:"identifier"> "{" <fields:Comma<StructField>> "}" => Statement::Struct {
         name: name.to_owned(),
         fields,
     },
 };
 
 StructField: (String, Type) = {
-    <name:"identifier"> skip ":" skip <ty:Type> skip "," => (name.to_owned(), ty),
+    <name:"identifier"> skip ":" skip <ty:Type> skip => (name.to_owned(), ty),
 };
 
 Enum: Statement = {
@@ -103,7 +103,7 @@ Enum: Statement = {
 };
 
 EnumVariant: EnumVariant = {
-    <name:"identifier"> skip <data:(<EnumVariantData> skip)?>=> match data {
+    <name:"identifier"> <data:(skip <EnumVariantData>)?> skip => match data {
         None => EnumVariant::Unit(name.to_owned()),
         Some(EnumVariantData::Tuple(types)) => EnumVariant::Tuple(name.to_owned(), types),
         Some(EnumVariantData::Struct(fields)) => EnumVariant::Struct(name.to_owned(), fields),

@@ -1,18 +1,21 @@
 use x::y::z as test
 
 
-struct Test {}
-enum Letters {A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Z,}
+struct Test {
+    a: int
+}
+enum Letters {A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Z}
 
 enum Char {
     Chinese(char),
     French(char),
-    Spanish(char),}
+    Spanish(char)
+}
 
 enum Message {
     Quit,
     Move { x: i32, y: i32 },
-    Write(String),
+    Write(String)
 }
 
 // Function declarations

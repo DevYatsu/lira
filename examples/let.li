@@ -13,8 +13,7 @@ spawn with xxx {
 } 
 
 
-struct Test {a:int,
-}
+struct Test {a:int}
 
 let (a, b) = (22, 23)
 let struct Test { a: b, b: c } = Test.new(2) + (2 * 1)
