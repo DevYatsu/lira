@@ -1,10 +1,5 @@
-use lexer::Lexer;
-use parser::ProgramParser;
+use lira::{Lexer, ProgramParser};
 use std::fs;
-
-pub(crate) mod ast;
-pub(crate) mod lexer;
-mod parser;
 
 fn main() {
     let args = std::env::args().collect::<Vec<_>>();
