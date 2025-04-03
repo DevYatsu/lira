@@ -56,6 +56,75 @@ fn test_string_literal() -> Result<(), LexingError> {
     }
     Ok(())
 }
+#[test]
+fn test_string_literal_plain() -> Result<(), LexingError> {
+    let tokens = lex_tokens(r#""hello world""#)?;
+    assert_eq!(tokens.len(), 1);
+
+    if let Token::String(parts) = &tokens[0].0 {
+        assert_eq!(parts, &[StringPart::Text("hello world".into())]);
+    } else {
+        panic!("Expected Token::String");
+    }
+
+    Ok(())
+}
+#[test]
+fn test_string_literal_escaped_chars() -> Result<(), LexingError> {
+    let tokens = lex_tokens(r#""hello\nworld\t!""#)?;
+    assert_eq!(tokens.len(), 1);
+
+    let expected_parts = vec![
+        StringPart::Text("hello".into()),
+        StringPart::EscapeChar('\n'),
+        StringPart::Text("world".into()),
+        StringPart::EscapeChar('\t'),
+        StringPart::Text("!".into()),
+    ];
+    
+    if let Token::String(parts) = &tokens[0].0 {
+        assert_eq!(parts, &expected_parts);
+    } else {
+        panic!("Expected Token::String");
+    }
+
+    Ok(())
+}
+#[test]
+fn test_string_literal_unicode_escape() -> Result<(), LexingError> {
+    let tokens = lex_tokens(r#""emoji: \u{1F600}""#)?;
+    assert_eq!(tokens.len(), 1);
+
+    if let Token::String(parts) = &tokens[0].0 {
+        assert_eq!(
+            parts,
+            &[StringPart::Text("emoji: ".into()), StringPart::Unicode('\u{1F600}')]
+        );
+    } else {
+        panic!("Expected Token::String");
+    }
+
+    Ok(())
+}
+#[test]
+fn test_string_with_interpolation() -> Result<(), LexingError> {
+    let tokens = lex_tokens(r#""hello #{name}""#)?;
+    assert_eq!(tokens.len(), 1);
+
+    if let Token::String(parts) = &tokens[0].0 {
+        assert_eq!(
+            parts,
+            &[
+                StringPart::Text("hello ".into()),
+                StringPart::Expression(vec![(0usize, Token::Ident("name".into()), 4usize)]),
+            ]
+        );
+    } else {
+        panic!("Expected Token::String");
+    }
+
+    Ok(())
+}
 
 #[test]
 fn test_operators() -> Result<(), LexingError> {

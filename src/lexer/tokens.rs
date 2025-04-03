@@ -111,7 +111,7 @@ pub enum Token {
     #[regex(r"(?&hex)", |lex| i32::from_str_radix(&lex.slice()[2..].replace('_', ""), 16).map_err(|e| LexingError::InvalidHex(e.to_string())))]
     Hex(i32),
 
-    #[regex(r#""([^"\\\x00-\x1F]|\\(["\\bnfrt/]|u[a-fA-F0-9]{4}))*""#, |lex| {
+    #[regex(r#""([^"\\\x00-\x1F]|\\(["\\bnfrt/]|u\{[a-fA-F0-9]{1,6}}))*""#, |lex| {
         process_string_literal(&lex.slice()[1..lex.slice().len() - 1])
     })]
     String(Vec<StringPart>),
