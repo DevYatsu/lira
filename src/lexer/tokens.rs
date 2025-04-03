@@ -232,6 +232,6 @@ pub enum Token {
     BlockComment,
     #[regex(r"[ \t\f]+", logos::skip)]
     Whitespace,
-    #[regex(r"[\n;]")]
+    #[regex(r"([ \t]*[;\n\r]+[ \t]*)*")]
     LineEnd,
 }

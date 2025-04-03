@@ -185,3 +185,185 @@ fn test_if_else_block() -> Result<(), LexingError> {
 
     Ok(())
 }
+
+#[test]
+fn test_tokens_across_lines() -> Result<(), LexingError> {
+    let input = r#"
+        let x = 10
+        let y = x + 5;
+    "#;
+
+    let tokens = lex_tokens(input)?;
+    let expected_tokens = vec![
+        Token::LineEnd,
+        Token::Let,
+        Token::Ident("x".into()),
+        Token::Equals,
+        Token::Int(10),
+        Token::LineEnd,
+        Token::Let,
+        Token::Ident("y".into()),
+        Token::Equals,
+        Token::Ident("x".into()),
+        Token::Plus,
+        Token::Int(5),
+        Token::LineEnd,
+    ];
+
+    assert_eq!(
+        tokens.iter().map(|t| t.0.clone()).collect::<Vec<_>>(),
+        expected_tokens
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_comments() -> Result<(), LexingError> {
+    let tokens = lex_tokens(
+        r#"
+        // this is a line comment
+        let x = 5; /* block comment */
+        "#,
+    )?;
+
+    let kinds: Vec<_> = tokens.iter().map(|(t, _)| t.to_owned()).collect();
+
+    let expected_tokens = vec![
+        Token::LineEnd,
+        Token::LineComment,
+        Token::LineEnd,
+        Token::Let,
+        Token::Ident("x".into()),
+        Token::Equals,
+        Token::Int(5),
+        Token::LineEnd,
+        Token::BlockComment,
+        Token::LineEnd,
+    ];
+
+    assert_eq!(kinds, expected_tokens);
+
+    Ok(())
+}
+
+#[test]
+fn test_token_coverage_full() -> Result<(), LexingError> {
+    let input = r#"
+        fn f(a: int) -> int {
+            let x = 0b1010 + 0xFF - 0o77 * 42 / 2;
+            if x == 10 && x != 5 || x >= 3 && x <= 6 {
+                x <<= 1; x >>= 1;
+                x += 1; x -= 1; x *= 2; x /= 2; x %= 2;
+                x &= 1; x |= 2; x ^= 3;
+                :> |v| v + 1
+            }
+        }
+    "#;
+
+    let tokens = lex_tokens(input)?;
+
+    let expected_tokens = vec![
+        Token::LineEnd,
+        Token::Fn,
+        Token::Ident("f".into()),
+        Token::LParen,
+        Token::Ident("a".into()),
+        Token::Colon,
+        Token::Ident("int".into()),
+        Token::RParen,
+        Token::Arrow,
+        Token::Ident("int".into()),
+        Token::LBrace,
+        Token::LineEnd,
+        Token::Let,
+        Token::Ident("x".into()),
+        Token::Equals,
+        Token::Binary(10),
+        Token::Plus,
+        Token::Hex(255),
+        Token::Minus,
+        Token::Octal(63),
+        Token::Star,
+        Token::Int(42),
+        Token::Slash,
+        Token::Int(2),
+        Token::LineEnd,
+        Token::If,
+        Token::Ident("x".into()),
+        Token::EqualsEquals,
+        Token::Int(10),
+        Token::And,
+        Token::Ident("x".into()),
+        Token::NotEquals,
+        Token::Int(5),
+        Token::Or,
+        Token::Ident("x".into()),
+        Token::GreaterEquals,
+        Token::Int(3),
+        Token::And,
+        Token::Ident("x".into()),
+        Token::LessEquals,
+        Token::Int(6),
+        Token::LBrace,
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::ShlEquals,
+        Token::Int(1),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::ShrEquals,
+        Token::Int(1),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::PlusEquals,
+        Token::Int(1),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::MinusEquals,
+        Token::Int(1),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::StarEquals,
+        Token::Int(2),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::SlashEquals,
+        Token::Int(2),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::PercentEquals,
+        Token::Int(2),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::AndEquals,
+        Token::Int(1),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::OrEquals,
+        Token::Int(2),
+        Token::LineEnd,
+        Token::Ident("x".into()),
+        Token::XorEquals,
+        Token::Int(3),
+        Token::LineEnd,
+        Token::Return,
+        Token::BitOr,
+        Token::Ident("v".into()),
+        Token::BitOr,
+        Token::Ident("v".into()),
+        Token::Plus,
+        Token::Int(1),
+        Token::LineEnd,
+        Token::RBrace,
+        Token::LineEnd,
+        Token::RBrace,
+        Token::LineEnd,
+    ];
+
+    let actual_tokens: Vec<_> = tokens.iter().map(|(t, _)| t.clone()).collect();
+
+    assert_eq!(actual_tokens, expected_tokens);
+
+    Ok(())
+}
