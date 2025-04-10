@@ -120,8 +120,8 @@ where
     let (open_pos, _) = chars.next().unwrap(); // consume '{'
     let expr_start = open_pos + 1;
     let mut depth = 1;
-
     let mut end_pos = expr_start;
+
     while let Some((j, c)) = chars.next() {
         match c {
             '{' => depth += 1,
@@ -137,20 +137,15 @@ where
     }
 
     if depth != 0 {
-        return Err(LexingError::UnterminatedString(
-            "Unclosed interpolation".into(),
-        ));
+        return Err(LexingError::UnterminatedString("Unclosed interpolation".into()));
     }
 
-    let tokens = Lexer::new(&input[expr_start..end_pos])
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+    let slice = &input[expr_start..end_pos];
+    let lexer = Lexer::new(slice);
+    let mut tokens = Vec::with_capacity(8);
+    for token in lexer {
+        tokens.push(token?);
+    }
 
     Ok((StringPart::Expression(tokens), end_pos + 1))
-}
-
-fn parse_interpolated_expression(
-    expr_str: &str,
-) -> Result<Vec<(usize, Token, usize)>, LexingError> {
-    Lexer::new(expr_str).into_iter().collect()
 }
