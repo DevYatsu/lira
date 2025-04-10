@@ -19,7 +19,6 @@ pub fn process_string_literal(input: &str) -> Result<Vec<StringPart>, LexingErro
     while let Some((i, c)) = chars.next() {
         match c {
             '\\' => {
-
                 // Save text accumulated so far
                 if i > text_start {
                     parts.push(StringPart::Text(input[text_start..i].to_owned()));
@@ -98,39 +97,44 @@ where
                 match chars.next() {
                     Some((_, '}')) => break, // End of Unicode escape
                     Some((_, c)) if c.is_ascii_hexdigit() => hex_chars.push(c),
-                    Some((_, c)) => return Err(LexingError::UnterminatedString(
-                        format!("Invalid character in Unicode escape: {}", c)
-                    )),
-                    None => return Err(LexingError::UnterminatedString(
-                        "Incomplete Unicode escape sequence".to_string()
-                    )),
+                    Some((_, c)) => {
+                        return Err(LexingError::UnterminatedString(format!(
+                            "Invalid character in Unicode escape: {}",
+                            c
+                        )));
+                    }
+                    None => {
+                        return Err(LexingError::UnterminatedString(
+                            "Incomplete Unicode escape sequence".to_string(),
+                        ));
+                    }
                 }
             }
-            
+
             // Validate hex length
             if hex_chars.is_empty() || hex_chars.len() > 6 {
                 return Err(LexingError::UnterminatedString(
-                    "Unicode escape must have 1-6 hex digits".to_string()
+                    "Unicode escape must have 1-6 hex digits".to_string(),
                 ));
             }
-            
+
             // Parse hex digits into Unicode code point
             let code_point = u32::from_str_radix(&hex_chars, 16).map_err(|_| {
                 LexingError::UnterminatedString("Invalid Unicode escape sequence".to_string())
             })?;
-            
+
             // Convert code point to character
             char::from_u32(code_point)
                 .map(StringPart::Unicode)
                 .ok_or_else(|| {
                     LexingError::UnterminatedString("Invalid Unicode code point".to_string())
                 })
-        },
+        }
         // // Legacy format: \uXXXX with exactly 4 hex digits
         // Some((_, first_hex)) if first_hex.is_ascii_hexdigit() => {
         //     let mut hex_chars = String::with_capacity(4);
         //     hex_chars.push(first_hex);
-            
+
         //     // Collect exactly 3 more hex digits
         //     for _ in 0..3 {
         //         match chars.next() {
@@ -143,12 +147,12 @@ where
         //             )),
         //         }
         //     }
-            
+
         //     // Parse hex digits into Unicode code point
         //     let code_point = u32::from_str_radix(&hex_chars, 16).map_err(|_| {
         //         LexingError::UnterminatedString("Invalid Unicode escape sequence".to_string())
         //     })?;
-            
+
         //     // Convert code point to character
         //     char::from_u32(code_point)
         //         .map(StringPart::Unicode)
@@ -156,19 +160,17 @@ where
         //             LexingError::UnterminatedString("Invalid Unicode code point".to_string())
         //         })
         // },
-        Some((_, c)) => Err(LexingError::UnterminatedString(
-            format!("Invalid start of Unicode escape sequence: {}", c)
-        )),
+        Some((_, c)) => Err(LexingError::UnterminatedString(format!(
+            "Invalid start of Unicode escape sequence: {}",
+            c
+        ))),
         None => Err(LexingError::UnterminatedString(
-            "Incomplete Unicode escape sequence".to_string()
+            "Incomplete Unicode escape sequence".to_string(),
         )),
     }
 }
 
-fn process_interpolation<I>(
-    chars: &mut I,
-    input: &str,
-) -> Result<(StringPart, usize), LexingError>
+fn process_interpolation<I>(chars: &mut I, input: &str) -> Result<(StringPart, usize), LexingError>
 where
     I: Iterator<Item = (usize, char)>,
 {
@@ -201,9 +203,8 @@ where
     }
 
     // Parse the expression within the braces
-    let expression = StringPart::Expression(parse_interpolated_expression(
-        &input[expr_start..expr_end],
-    )?);
+    let expression =
+        StringPart::Expression(parse_interpolated_expression(&input[expr_start..expr_end])?);
 
     Ok((expression, expr_end + 1))
 }

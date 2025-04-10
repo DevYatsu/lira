@@ -30,7 +30,17 @@ Args: Vec<Expr> = {
 
 block_body: Vec<Statement> = (<Statement> skip)*;
 skip: () = unique_skip*;
-unique_skip: () = {"line_end" => (), "line_comment" => (), "block_comment" => ()};
+unique_skip: () = {"line_end" => (), Comment => ()};
+
+Comment: Comment = {
+    <"line_comment"> => Comment::Line(<>),
+    <"block_comment"> => Comment::Block(<>),
+    <"doc_comment"> => Comment::Doc(<>),
+};
+
+Comments: Vec<Comment> = {
+    <comments:Comment*> => comments,
+};
 
 pub Program: Program = {
     skip <stmts: block_body>  => Program { statements: stmts },
@@ -131,7 +141,7 @@ FnDecl: Statement = {
 
 
 Let: Statement = {
-    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> skip <ty:(":" skip <Type> skip)?>  "=" skip <value:ExprOrClosure> => Statement::Let {
+    "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> <ty:(":" skip <Type> skip)?> "=" skip <value:ExprOrClosure> => Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
         mutable: modifiers.contains(&"mut"),
@@ -142,13 +152,13 @@ Let: Statement = {
 };
 
 LetName: LetName = {
-    <name:"identifier"> => LetName::Ident(name.to_owned()),
-    "(" <names:Comma<LetName>> ")" => LetName::TupleDestructure(names),
-    "[" <names:Comma<LetName>> "]" => LetName::ArrayDestructure(names),
-    "struct" skip <name:"identifier"> skip "{" <fields:Comma<StructFieldDestructure>> "}" => LetName::StructDestructure(
+    <name:"identifier"> skip "{" <fields:Comma<StructFieldDestructure>> "}" => LetName::StructDestructure(
         name.to_owned(),
         fields,
     ),
+    <name:"identifier"> => LetName::Ident(name.to_owned()),
+    "(" <names:Comma<LetName>> ")" => LetName::TupleDestructure(names),
+    "[" <names:Comma<LetName>> "]" => LetName::ArrayDestructure(names),
 };
 
 StructFieldDestructure: (String, Option<String>) = {
@@ -274,6 +284,7 @@ ExprOrClosure: Expr = {
     Expr,
 };
 
+// todo! parse strings
 // Expressions in Lira
 pub Expr: Expr = {
     // Precedence levels from lowest to highest
@@ -505,9 +516,9 @@ extern {
         "|>" => Token::Pipe,
 
         // Comments and whitespace
-        "line_comment" => Token::LineComment,
-        "block_comment" => Token::BlockComment,
+        "line_comment" => Token::LineComment(<String>),
+        "block_comment" => Token::BlockComment(<String>),
+        "doc_comment" => Token::DocComment(<String>),
         "line_end" => Token::LineEnd,
     }
-
 }

@@ -18,6 +18,24 @@ impl<'input> Lexer<'input> {
             token_stream: Token::lexer(input).spanned(),
         }
     }
+
+    pub fn slice(&self) -> &'input str {
+        self.token_stream.slice()
+    }
+    pub fn span(&self) -> (usize, usize) {
+        let span = self.token_stream.span();
+        (span.start, span.end)
+    }
+    pub fn start(&self) -> usize {
+        self.token_stream.span().start
+    }
+    pub fn end(&self) -> usize {
+        self.token_stream.span().end
+    }
+
+    pub fn source(&self) -> &'input str {
+        self.token_stream.source()
+    }
 }
 
 impl<'input> Iterator for Lexer<'input> {

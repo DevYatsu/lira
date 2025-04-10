@@ -129,6 +129,13 @@ pub enum Expr {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum Comment {
+    Line(String),
+    Block(String),
+    Doc(String),
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Type {
     Ident(String),
     Tuple(Vec<Type>),

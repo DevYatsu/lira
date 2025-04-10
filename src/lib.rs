@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod lexer;
+pub mod minifier;
 pub mod parser;
 
 // Re-export common items

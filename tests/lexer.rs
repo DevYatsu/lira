@@ -81,7 +81,7 @@ fn test_string_literal_escaped_chars() -> Result<(), LexingError> {
         StringPart::EscapeChar('\t'),
         StringPart::Text("!".into()),
     ];
-    
+
     if let Token::String(parts) = &tokens[0].0 {
         assert_eq!(parts, &expected_parts);
     } else {
@@ -98,7 +98,10 @@ fn test_string_literal_unicode_escape() -> Result<(), LexingError> {
     if let Token::String(parts) = &tokens[0].0 {
         assert_eq!(
             parts,
-            &[StringPart::Text("emoji: ".into()), StringPart::Unicode('\u{1F600}')]
+            &[
+                StringPart::Text("emoji: ".into()),
+                StringPart::Unicode('\u{1F600}')
+            ]
         );
     } else {
         panic!("Expected Token::String");
@@ -300,14 +303,14 @@ fn test_comments() -> Result<(), LexingError> {
 
     let expected_tokens = vec![
         Token::LineEnd,
-        Token::LineComment,
+        Token::LineComment(_),
         Token::LineEnd,
         Token::Let,
         Token::Ident("x".into()),
         Token::Equals,
         Token::Int(5),
         Token::LineEnd,
-        Token::BlockComment,
+        Token::BlockComment(_),
         Token::LineEnd,
     ];
 

@@ -96,7 +96,7 @@ pub enum Token {
 
     #[token("async")]
     Async,
-     #[token("await")]
+    #[token("await")]
     Await,
 
     // Identifiers
@@ -104,9 +104,9 @@ pub enum Token {
     Ident(String),
 
     // Literals
-    #[regex(r"-?(?&decimal)", |lex| lex.slice().parse::<i32>())]
+    #[regex(r"(?&decimal)", |lex| lex.slice().parse::<i32>())]
     Int(i32),
-    #[regex(r"(-?(?:0|[1-9]\d*))?(?:\.(?&decimal))(?:[eE][+-]?(?&decimal))?", |lex| lex.slice().parse::<f64>(), priority = 3)]
+    #[regex(r"(?:0|[1-9]\d*)?(?:\.(?&decimal))(?:[eE][+-]?(?&decimal))?", |lex| lex.slice().parse::<f64>(), priority = 3)]
     Float(f64),
 
     #[regex(r"(?&bin)", |lex| i32::from_str_radix(&lex.slice()[2..].replace('_', ""), 2).map_err(|e| LexingError::InvalidBinary(e.to_string())))]
@@ -231,10 +231,24 @@ pub enum Token {
     MatchReturn,
 
     // Comments and whitespace
-    #[regex(r"//[^\n]*")]
-    LineComment,
-    #[regex(r"/\*([^*]|\*[^/])*\*/")]
-    BlockComment,
+    #[regex(r"//[^\n]*", |lex| {
+        let full = lex.slice();
+        full[2..].trim().to_owned()
+    })]
+    LineComment(String),
+
+    #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| {
+        let full = lex.slice();
+        full[2..full.len()-2].trim().to_owned()
+    })]
+    BlockComment(String),
+
+    #[regex(r"///[^\n]*", |lex| {
+        let full = lex.slice();
+        full[3..].trim().to_owned()
+    })]
+    DocComment(String),
+
     #[regex(r"[ \t\f]+", logos::skip)]
     Whitespace,
     #[regex(r"([ \t]*[;\n\r]+[ \t]*)*")]
