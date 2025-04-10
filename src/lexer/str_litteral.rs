@@ -137,7 +137,9 @@ where
     }
 
     if depth != 0 {
-        return Err(LexingError::UnterminatedString("Unclosed interpolation".into()));
+        return Err(LexingError::UnterminatedString(
+            "Unclosed interpolation".into(),
+        ));
     }
 
     let slice = &input[expr_start..end_pos];

@@ -15,10 +15,7 @@ fn lex_tokens(input: &str) -> Result<Vec<(Token, &str)>, LexingError> {
 #[test]
 fn test_identifier_and_keyword() -> Result<(), LexingError> {
     let tokens = lex_tokens("let x")?;
-    assert_eq!(
-        tokens,
-        vec![(Token::Let, "let"), (Token::Ident("x"), "x")]
-    );
+    assert_eq!(tokens, vec![(Token::Let, "let"), (Token::Ident("x"), "x")]);
 
     Ok(())
 }

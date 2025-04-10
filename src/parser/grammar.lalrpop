@@ -1,5 +1,6 @@
 grammar<'i>;
 use crate::ast::*;
+use crate::parser::string::process_parser_string;
 use crate::lexer::{
     tokens::{LexingError, Token},
     str_litteral::StringPart,
@@ -386,7 +387,9 @@ pub Term: Expr<'i> = {
 pub Literal: Literal<'i> = {
     <val:"int"> => Literal::Int(val),
     <val:"float"> => Literal::Float(val),
-    <val:"string"> => Literal::String(val),
+    <val:"string"> => {
+        Literal::String(process_parser_string(val))
+    },
     <val:"binary"> => Literal::Int(val),
     <val:"octal"> => Literal::Int(val),
     <val:"hex"> => Literal::Int(val),

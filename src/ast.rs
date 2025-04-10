@@ -1,11 +1,11 @@
-use crate::lexer::str_litteral::StringPart;
+use crate::parser::string::ParserStringPart;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Program<'i> {
     pub statements: Vec<Statement<'i>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement<'i> {
     FnDecl {
         name: &'i str,
@@ -64,13 +64,13 @@ pub enum Statement<'i> {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Match<'i> {
     pub expr: Expr<'i>,
     pub arms: Vec<MatchArm<'i>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LetName<'i> {
     Ident(&'i str),
     ArrayDestructure(Vec<LetName<'i>>),
@@ -78,27 +78,27 @@ pub enum LetName<'i> {
     StructDestructure(&'i str, Vec<(&'i str, Option<&'i str>)>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum EnumVariant<'i> {
     Unit(&'i str),
     Tuple(&'i str, Vec<Type<'i>>),
     Struct(&'i str, Vec<(&'i str, Option<Type<'i>>)>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum EnumVariantData<'i> {
     Tuple(Vec<Type<'i>>),
     Struct(Vec<(&'i str, Option<Type<'i>>)>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct MatchArm<'i> {
     pub pattern: Pattern<'i>,
     pub body: Vec<Statement<'i>>,
     pub guard: Option<Expr<'i>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Pattern<'i> {
     Literal(Literal<'i>),
     Ident(&'i str),
@@ -107,7 +107,7 @@ pub enum Pattern<'i> {
     Wildcard,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expr<'i> {
     Literal(Literal<'i>),
     Ident(&'i str),
@@ -128,14 +128,14 @@ pub enum Expr<'i> {
     Closure(Vec<(&'i str, Option<Type<'i>>)>, Vec<Statement<'i>>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Comment<'i> {
     Line(&'i str),
     Block(&'i str),
     Doc(&'i str),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type<'i> {
     Ident(&'i str),
     Tuple(Vec<Type<'i>>),
@@ -145,11 +145,11 @@ pub enum Type<'i> {
     Awaitable(Box<Type<'i>>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Literal<'i> {
     Int(i32),
     Float(f64),
-    String(Vec<StringPart<'i>>),
+    String(Vec<ParserStringPart<'i>>),
     Inf,
     Bool(bool),
 }

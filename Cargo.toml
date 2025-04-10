@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 lalrpop-util = { version = "0.22.1", default-features = false }
 logos = "0.15.0"
+string-interner = "0.19.0"
 
 [build-dependencies]
 lalrpop = "0.22.1"

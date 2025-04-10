@@ -1,4 +1,11 @@
-use lira::{Lexer, ProgramParser, minifier::minify};
+use lira::{
+    Lexer, ProgramParser,
+    ir::{
+        context::LoweringContext,
+        interner::{AsRcRefCell, Interner},
+    },
+    minifier::minify,
+};
 use std::fs;
 
 fn main() {
@@ -50,7 +57,11 @@ fn main() {
 
 fn parsing(lexer: Lexer<'_>, print: bool) -> () {
     let parser = ProgramParser::new();
-    let result = parser.parse(lexer);
+    let result = parser.parse(lexer).unwrap();
+
+    let interner = Interner::as_rc_refcell();
+    let lowered = LoweringContext::new(interner);
+    let result = lowered.lower_program(&result);
 
     if let Ok(result) = result {
         if print {
