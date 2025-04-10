@@ -2,9 +2,9 @@ use crate::{Lexer, Token};
 
 pub fn minify(mut lexer: Lexer<'_>) -> String {
     let source = lexer.source();
-    let mut result = String::with_capacity(source.len() / 2);
+    let mut result = String::with_capacity(source.len());
 
-    let mut last_significant_token: Option<Token> = None;
+    let mut last_token: Option<Token> = None;
     let mut space_pending = false;
 
     while let Some(Ok((start, token, end))) = lexer.next() {
@@ -30,27 +30,13 @@ pub fn minify(mut lexer: Lexer<'_>) -> String {
                 result.push('\n');
             }
             Token::LineEnd => {
-                if matches!(
-                    last_significant_token,
-                    Some(
-                        Token::Ident(_)
-                            | Token::Int(_)
-                            | Token::Octal(_)
-                            | Token::Binary(_)
-                            | Token::Hex(_)
-                            | Token::String(_)
-                            | Token::Float(_)
-                            | Token::RParen
-                            | Token::RBracket
-                            | Token::RBrace
-                    )
-                ) {
-                    result.push(';');
+                if let Some(t) = &last_token {
+                    if ends_expr(t) {
+                        result.push(';');
+                    }
                 }
             }
-            Token::Whitespace => {
-                space_pending = true;
-            }
+            Token::Whitespace => {}
             Token::LParen => result.push('('),
             Token::RParen => result.push(')'),
             Token::LBrace => result.push('{'),
@@ -61,10 +47,11 @@ pub fn minify(mut lexer: Lexer<'_>) -> String {
             Token::Comma => result.push(','),
             Token::Colon => result.push(':'),
             Token::Wildcard => result.push('_'),
-            Token::Arrow | Token::Range => result.push_str(slice),
+            Token::Arrow => result.push_str("->"),
+            Token::Range => result.push_str(".."),
 
             _ => {
-                if space_pending || needs_space_between(&last_significant_token, &token) {
+                if space_pending || needs_space_between(&last_token, &token) {
                     flush_space(&mut result, true);
                 }
                 result.push_str(slice);
@@ -79,7 +66,7 @@ pub fn minify(mut lexer: Lexer<'_>) -> String {
                 | Token::BlockComment(_)
                 | Token::DocComment(_)
         ) {
-            last_significant_token = Some(token);
+            last_token = Some(token);
         }
 
         space_pending = false;
@@ -90,8 +77,8 @@ pub fn minify(mut lexer: Lexer<'_>) -> String {
 }
 
 #[inline(always)]
-fn flush_space(result: &mut String, do_insert: bool) {
-    if do_insert
+fn flush_space(result: &mut String, insert: bool) {
+    if insert
         && !matches!(
             result.as_bytes().last(),
             Some(b' ' | b'\n' | b';' | b'{' | b'(' | b'[')
@@ -101,9 +88,25 @@ fn flush_space(result: &mut String, do_insert: bool) {
     }
 }
 
+#[inline(always)]
+fn ends_expr(token: &Token) -> bool {
+    matches!(
+        token,
+        Token::Ident(_)
+            | Token::Int(_)
+            | Token::Octal(_)
+            | Token::Binary(_)
+            | Token::Hex(_)
+            | Token::String(_)
+            | Token::Float(_)
+            | Token::RParen
+            | Token::RBracket
+            | Token::RBrace
+    )
+}
+
 fn needs_space_between(prev: &Option<Token>, next: &Token) -> bool {
     use Token::*;
-
     match (prev, next) {
         (
             Some(
