@@ -12,7 +12,11 @@ fn main() {
         .map(|x| x == "m" || x == "minify")
         .unwrap_or(false);
 
-    let source = if minify {concat_dir()} else {fs::read_to_string("output.li").expect("could not read output.li")};
+    let source = if minify {
+        concat_dir()
+    } else {
+        fs::read_to_string("output.li").expect("could not read output.li")
+    };
 
     let char_count = source.len();
 
@@ -62,14 +66,13 @@ fn minifying(lexer: Lexer<'_>) -> () {
     fs::write("output.li", minified).expect("Failed to write file");
 }
 
-
 fn concat_dir() -> String {
     let mut r = String::new();
 
     for entry in fs::read_dir("./examples").expect("could not read examples dir") {
         let p = entry.unwrap().path();
         println!("Reading file: {:?}", p);
-        
+
         r.push_str(&fs::read_to_string(p).expect("could not read to string file"));
         r.push('\n');
     }
