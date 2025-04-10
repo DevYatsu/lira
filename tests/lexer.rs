@@ -17,7 +17,7 @@ fn test_identifier_and_keyword() -> Result<(), LexingError> {
     let tokens = lex_tokens("let x")?;
     assert_eq!(
         tokens,
-        vec![(Token::Let, "let"), (Token::Ident("x".to_string()), "x")]
+        vec![(Token::Let, "let"), (Token::Ident("x"), "x")]
     );
 
     Ok(())
@@ -47,7 +47,7 @@ fn test_string_literal() -> Result<(), LexingError> {
     if let Token::String(parts) = &tokens[0].0 {
         assert_eq!(parts.len(), 1);
         if let StringPart::Text(s) = &parts[0] {
-            assert_eq!(s, "hello");
+            assert_eq!(s, &"hello");
         } else {
             panic!("Expected literal string part");
         }
@@ -303,14 +303,14 @@ fn test_comments() -> Result<(), LexingError> {
 
     let expected_tokens = vec![
         Token::LineEnd,
-        Token::LineComment(_),
+        Token::LineComment(" this is a line comment".into()),
         Token::LineEnd,
         Token::Let,
         Token::Ident("x".into()),
         Token::Equals,
         Token::Int(5),
         Token::LineEnd,
-        Token::BlockComment(_),
+        Token::BlockComment(" block comment ".into()),
         Token::LineEnd,
     ];
 
