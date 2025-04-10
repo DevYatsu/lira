@@ -12,7 +12,7 @@ fn main() {
         .map(|x| x == "m" || x == "minify")
         .unwrap_or(false);
 
-    let source = fs::read_to_string("output.li")
+    let source = fs::read_to_string("examples/fn.li")
         .expect("Failed to read file")
         .repeat(1);
 

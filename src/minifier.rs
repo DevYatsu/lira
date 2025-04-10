@@ -73,7 +73,11 @@ pub fn minify(mut lexer: Lexer<'_>) -> String {
 
         if !matches!(
             token,
-            Token::Whitespace | Token::LineEnd | Token::LineComment(_) | Token::BlockComment(_) | Token::DocComment(_)
+            Token::Whitespace
+                | Token::LineEnd
+                | Token::LineComment(_)
+                | Token::BlockComment(_)
+                | Token::DocComment(_)
         ) {
             last_significant_token = Some(token);
         }
@@ -87,7 +91,12 @@ pub fn minify(mut lexer: Lexer<'_>) -> String {
 
 #[inline(always)]
 fn flush_space(result: &mut String, do_insert: bool) {
-    if do_insert && !matches!(result.as_bytes().last(), Some(b' ' | b'\n' | b';' | b'{' | b'(' | b'[')) {
+    if do_insert
+        && !matches!(
+            result.as_bytes().last(),
+            Some(b' ' | b'\n' | b';' | b'{' | b'(' | b'[')
+        )
+    {
         result.push(' ');
     }
 }
@@ -96,18 +105,25 @@ fn needs_space_between(prev: &Option<Token>, next: &Token) -> bool {
     use Token::*;
 
     match (prev, next) {
-        (Some(Fn | Let | Use | Struct | Enum | Async | Await | While | If | Elsif | For | Match | TypeAlias), Ident(_))
+        (
+            Some(
+                Fn | Let | Use | Struct | Enum | Async | Await | While | If | Elsif | For | Match
+                | TypeAlias | Return | As | In | With,
+            ),
+            Ident(_),
+        )
         | (Some(Async), Fn)
-        | (Some(If | While), LParen)
+        | (Some(If | While | Return), LParen)
         | (Some(Spawn), With)
         | (Some(Let | While | For | Match), Atomic | Lazy | Mut)
         | (Some(Ident(_)), Ident(_) | In)
         | (Some(Int(_) | Octal(_) | Hex(_) | Binary(_) | Float(_) | True | False), Ident(_))
-        | (Some(In | While | If | Elsif | Await | Async), Int(_) | Octal(_) | Hex(_) | Binary(_) | Float(_) | True | False)
+        | (
+            Some(In | While | If | Elsif | Await | Async | Return),
+            Int(_) | Octal(_) | Hex(_) | Binary(_) | Float(_) | True | False,
+        )
         | (Some(Ident(_)), As | If)
-        | (Some(As | In), Ident(_))
-        | (Some(Atomic | Lazy | Mut), Ident(_) | Atomic | Mut | Lazy)
-        | (Some(With), Ident(_)) => true,
+        | (Some(Atomic | Lazy | Mut), Ident(_) | Atomic | Mut | Lazy) => true,
 
         _ => false,
     }
