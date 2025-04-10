@@ -15,7 +15,11 @@ fn main() {
     let source = if minify {
         concat_dir()
     } else {
-        fs::read_to_string("output.li").expect("could not read output.li")
+        // before changing from String to &str
+        // lexer took 88ms to parser 1000x output.li (around 30_000_000 chars/sec)
+        fs::read_to_string("output.li")
+            .expect("could not read output.li")
+            .repeat(1000)
     };
 
     let char_count = source.len();

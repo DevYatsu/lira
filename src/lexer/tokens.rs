@@ -19,7 +19,7 @@ pub enum LexingError {
     UnterminatedString(String),
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -43,7 +43,7 @@ impl From<ParseFloatError> for LexingError {
 #[logos(subpattern hex = r"0x[0-9a-fA-F]+")]
 #[logos(subpattern bin = r"0b[01][_01]*")]
 #[logos(subpattern oct = r"0o[0-7][_0-7]*")]
-pub enum Token {
+pub enum Token<'input> {
     // Keywords
     #[token("fn")]
     Fn,
@@ -100,8 +100,8 @@ pub enum Token {
     Await,
 
     // Identifiers
-    #[regex(r"(?&ident)", |lex| lex.slice().to_string(), priority = 1)]
-    Ident(String),
+    #[regex(r"(?&ident)", |lex| lex.slice(), priority = 1)]
+    Ident(&'input str),
 
     // Literals
     #[regex(r"(?&decimal)", |lex| lex.slice().parse::<i32>())]
@@ -119,7 +119,7 @@ pub enum Token {
     #[regex(r#""([^"\\\x00-\x1F]|\\(["\\bnfrt/]|u\{[a-fA-F0-9]{1,6}}))*""#, |lex| {
         process_string_literal(&lex.slice()[1..lex.slice().len() - 1])
     })]
-    String(Vec<StringPart>),
+    String(Vec<StringPart<'input>>),
 
     // Symbols and operators
     #[token(":")]
@@ -233,21 +233,21 @@ pub enum Token {
     // Comments and whitespace
     #[regex(r"//[^\n]*", |lex| {
         let full = lex.slice();
-        full[2..].trim().to_owned()
+        full[2..].trim()
     })]
-    LineComment(String),
+    LineComment(&'input str),
 
     #[regex(r"/\*([^*]|\*[^/])*\*/", |lex| {
         let full = lex.slice();
-        full[2..full.len()-2].trim().to_owned()
+        full[2..full.len()-2].trim()
     })]
-    BlockComment(String),
+    BlockComment(&'input str),
 
     #[regex(r"///[^\n]*", |lex| {
         let full = lex.slice();
-        full[3..].trim().to_owned()
+        full[3..].trim()
     })]
-    DocComment(String),
+    DocComment(&'input str),
 
     #[regex(r"[ \t\f]+", logos::skip)]
     Whitespace,

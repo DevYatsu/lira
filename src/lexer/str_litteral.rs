@@ -4,191 +4,131 @@ use super::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum StringPart {
-    Text(String),
+pub enum StringPart<'input> {
+    Text(&'input str),
     EscapeChar(char),
     Unicode(char),
-    Expression(Vec<(usize, Token, usize)>),
+    Expression(Vec<(usize, Token<'input>, usize)>),
 }
 
-pub fn process_string_literal(input: &str) -> Result<Vec<StringPart>, LexingError> {
-    let mut parts = Vec::new();
-    let mut text_start = 0;
+pub fn process_string_literal<'i>(input: &'i str) -> Result<Vec<StringPart<'i>>, LexingError> {
+    let mut parts = Vec::with_capacity(4);
     let mut chars = input.char_indices().peekable();
+    let mut last_pos = 0;
 
     while let Some((i, c)) = chars.next() {
         match c {
             '\\' => {
-                // Save text accumulated so far
-                if i > text_start {
-                    parts.push(StringPart::Text(input[text_start..i].to_owned()));
+                if last_pos < i {
+                    parts.push(StringPart::Text(&input[last_pos..i]));
                 }
-
-                // Process escape sequence
-                let escape_part = process_escape_sequence(&mut chars)?;
-                parts.push(escape_part);
-
-                // Update text_start to after this escape sequence
-                text_start = chars.peek().map_or(input.len(), |&(pos, _)| pos);
+                parts.push(process_escape_sequence(&mut chars)?);
+                last_pos = chars.peek().map_or(input.len(), |&(j, _)| j);
             }
+
             '#' => {
-                // Process possible interpolation expression
-                if chars.peek().map_or(false, |&(_, next_c)| next_c == '{') {
-                    // Save text accumulated so far
-                    if i > text_start {
-                        parts.push(StringPart::Text(input[text_start..i].to_owned()));
+                if matches!(chars.peek(), Some(&(_, '{'))) {
+                    if last_pos < i {
+                        parts.push(StringPart::Text(&input[last_pos..i]));
                     }
-
-                    // Process interpolated expression
-                    let (expression, next_pos) = process_interpolation(&mut chars, input)?;
-                    parts.push(expression);
-                    text_start = next_pos;
+                    let (expr, end) = process_interpolation(&mut chars, input)?;
+                    parts.push(expr);
+                    last_pos = end;
                 }
-                // Otherwise, treat # as normal text character
             }
-            _ => {} // Continue accumulating regular text characters
+
+            _ => {}
         }
     }
 
-    // Add any remaining text
-    if text_start < input.len() {
-        parts.push(StringPart::Text(input[text_start..].to_owned()));
+    if last_pos < input.len() {
+        parts.push(StringPart::Text(&input[last_pos..]));
     }
 
     Ok(parts)
 }
 
-fn process_escape_sequence<I>(chars: &mut I) -> Result<StringPart, LexingError>
+fn process_escape_sequence<I>(chars: &mut I) -> Result<StringPart<'static>, LexingError>
 where
     I: Iterator<Item = (usize, char)>,
 {
     match chars.next() {
-        Some((_, 'n')) => Ok(StringPart::EscapeChar('\n')),
-        Some((_, 'r')) => Ok(StringPart::EscapeChar('\r')),
-        Some((_, 't')) => Ok(StringPart::EscapeChar('\t')),
-        Some((_, '\\')) => Ok(StringPart::EscapeChar('\\')),
-        Some((_, '0')) => Ok(StringPart::EscapeChar('\0')),
-        Some((_, '"')) => Ok(StringPart::EscapeChar('"')),
-        Some((_, '\'')) => Ok(StringPart::EscapeChar('\'')),
-        Some((_, '#')) => Ok(StringPart::EscapeChar('#')),
-        Some((_, 'u')) => process_unicode_escape(chars),
-        Some((_, c)) => Err(LexingError::UnterminatedString(format!(
-            "Unknown escape sequence: \\{}",
-            c
-        ))),
+        Some((_, esc)) => match esc {
+            'n' => Ok(StringPart::EscapeChar('\n')),
+            'r' => Ok(StringPart::EscapeChar('\r')),
+            't' => Ok(StringPart::EscapeChar('\t')),
+            '\\' => Ok(StringPart::EscapeChar('\\')),
+            '0' => Ok(StringPart::EscapeChar('\0')),
+            '"' => Ok(StringPart::EscapeChar('"')),
+            '\'' => Ok(StringPart::EscapeChar('\'')),
+            '#' => Ok(StringPart::EscapeChar('#')),
+            'u' => process_unicode_escape(chars),
+            _ => Err(LexingError::UnterminatedString(format!(
+                "Unknown escape: \\{}",
+                esc
+            ))),
+        },
         None => Err(LexingError::UnterminatedString(
-            "String terminated with escape character".to_string(),
+            "Escape at end of string".into(),
         )),
     }
 }
 
-fn process_unicode_escape<I>(chars: &mut I) -> Result<StringPart, LexingError>
+fn process_unicode_escape<I>(chars: &mut I) -> Result<StringPart<'static>, LexingError>
 where
     I: Iterator<Item = (usize, char)>,
 {
-    // Check if we have the new format \u{XXXX}
     match chars.next() {
         Some((_, '{')) => {
-            // New format: \u{XXXX} with variable length hex
-            let mut hex_chars = String::new();
+            let mut value = 0u32;
+            let mut count = 0;
 
-            // Read hex digits until closing brace
-            loop {
-                match chars.next() {
-                    Some((_, '}')) => break, // End of Unicode escape
-                    Some((_, c)) if c.is_ascii_hexdigit() => hex_chars.push(c),
-                    Some((_, c)) => {
-                        return Err(LexingError::UnterminatedString(format!(
-                            "Invalid character in Unicode escape: {}",
-                            c
-                        )));
-                    }
-                    None => {
-                        return Err(LexingError::UnterminatedString(
-                            "Incomplete Unicode escape sequence".to_string(),
-                        ));
-                    }
+            while let Some((_, c)) = chars.next() {
+                if c == '}' {
+                    break;
                 }
+                if !c.is_ascii_hexdigit() || count == 6 {
+                    return Err(LexingError::UnterminatedString(
+                        "Invalid Unicode escape".into(),
+                    ));
+                }
+                value = value * 16 + c.to_digit(16).unwrap();
+                count += 1;
             }
 
-            // Validate hex length
-            if hex_chars.is_empty() || hex_chars.len() > 6 {
-                return Err(LexingError::UnterminatedString(
-                    "Unicode escape must have 1-6 hex digits".to_string(),
-                ));
-            }
-
-            // Parse hex digits into Unicode code point
-            let code_point = u32::from_str_radix(&hex_chars, 16).map_err(|_| {
-                LexingError::UnterminatedString("Invalid Unicode escape sequence".to_string())
-            })?;
-
-            // Convert code point to character
-            char::from_u32(code_point)
+            char::from_u32(value)
                 .map(StringPart::Unicode)
-                .ok_or_else(|| {
-                    LexingError::UnterminatedString("Invalid Unicode code point".to_string())
-                })
+                .ok_or_else(|| LexingError::UnterminatedString("Bad Unicode code point".into()))
         }
-        // // Legacy format: \uXXXX with exactly 4 hex digits
-        // Some((_, first_hex)) if first_hex.is_ascii_hexdigit() => {
-        //     let mut hex_chars = String::with_capacity(4);
-        //     hex_chars.push(first_hex);
-
-        //     // Collect exactly 3 more hex digits
-        //     for _ in 0..3 {
-        //         match chars.next() {
-        //             Some((_, hex_char)) if hex_char.is_ascii_hexdigit() => hex_chars.push(hex_char),
-        //             Some((_, c)) => return Err(LexingError::UnterminatedString(
-        //                 format!("Invalid hexadecimal digit in Unicode escape: {}", c)
-        //             )),
-        //             None => return Err(LexingError::UnterminatedString(
-        //                 "Incomplete Unicode escape sequence".to_string()
-        //             )),
-        //         }
-        //     }
-
-        //     // Parse hex digits into Unicode code point
-        //     let code_point = u32::from_str_radix(&hex_chars, 16).map_err(|_| {
-        //         LexingError::UnterminatedString("Invalid Unicode escape sequence".to_string())
-        //     })?;
-
-        //     // Convert code point to character
-        //     char::from_u32(code_point)
-        //         .map(StringPart::Unicode)
-        //         .ok_or_else(|| {
-        //             LexingError::UnterminatedString("Invalid Unicode code point".to_string())
-        //         })
-        // },
         Some((_, c)) => Err(LexingError::UnterminatedString(format!(
-            "Invalid start of Unicode escape sequence: {}",
+            "Invalid Unicode start: {}",
             c
         ))),
         None => Err(LexingError::UnterminatedString(
-            "Incomplete Unicode escape sequence".to_string(),
+            "EOF in Unicode escape".into(),
         )),
     }
 }
 
-fn process_interpolation<I>(chars: &mut I, input: &str) -> Result<(StringPart, usize), LexingError>
+fn process_interpolation<'i, I>(
+    chars: &mut I,
+    input: &'i str,
+) -> Result<(StringPart<'i>, usize), LexingError>
 where
     I: Iterator<Item = (usize, char)>,
 {
-    // Consume the '{'
-    let (open_brace_pos, _) = chars.next().unwrap();
-    let expr_start = open_brace_pos + 1;
+    let (open_pos, _) = chars.next().unwrap(); // consume '{'
+    let expr_start = open_pos + 1;
+    let mut depth = 1;
 
-    // Find matching closing brace, accounting for nesting
-    let mut brace_count = 1;
-    let mut expr_end = input.len(); // Default to end if no closing brace
-
-    while let Some((j, expr_char)) = chars.next() {
-        match expr_char {
-            '{' => brace_count += 1,
+    let mut end_pos = expr_start;
+    while let Some((j, c)) = chars.next() {
+        match c {
+            '{' => depth += 1,
             '}' => {
-                brace_count -= 1;
-                if brace_count == 0 {
-                    expr_end = j;
+                depth -= 1;
+                if depth == 0 {
+                    end_pos = j;
                     break;
                 }
             }
@@ -196,17 +136,17 @@ where
         }
     }
 
-    if brace_count > 0 {
+    if depth != 0 {
         return Err(LexingError::UnterminatedString(
-            "Unterminated expression in string interpolation".to_string(),
+            "Unclosed interpolation".into(),
         ));
     }
 
-    // Parse the expression within the braces
-    let expression =
-        StringPart::Expression(parse_interpolated_expression(&input[expr_start..expr_end])?);
+    let tokens = Lexer::new(&input[expr_start..end_pos])
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
 
-    Ok((expression, expr_end + 1))
+    Ok((StringPart::Expression(tokens), end_pos + 1))
 }
 
 fn parse_interpolated_expression(
