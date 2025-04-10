@@ -94,6 +94,11 @@ pub enum Token {
     #[token("false")]
     False,
 
+    #[token("async")]
+    Async,
+     #[token("await")]
+    Await,
+
     // Identifiers
     #[regex(r"(?&ident)", |lex| lex.slice().to_string(), priority = 1)]
     Ident(String),

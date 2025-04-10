@@ -1,0 +1,9 @@
+use std::request;
+
+typealias AsyncFunc = async () : Response
+
+async fn req_example() -> Response {
+    :> request.get("https://example.com")
+}
+
+let response: async Response = req_example()

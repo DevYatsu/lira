@@ -9,6 +9,7 @@ pub struct Program {
 pub enum Statement {
     FnDecl {
         name: String,
+        _async: bool,
         params: Vec<(String, Option<Type>)>,
         return_type: Option<Type>,
         body: Vec<Statement>,
@@ -112,6 +113,7 @@ pub enum Expr {
     Ident(String),
     Array(Vec<Expr>),
     Match(Box<Match>),
+    Awaitable(Box<Expr>),
 
     // parenthesized expression is a tuple
     Tuple(Vec<Expr>),
@@ -131,7 +133,9 @@ pub enum Type {
     Ident(String),
     Tuple(Vec<Type>),
     Function(Vec<Type>, Box<Type>),
+    AsyncFunction(Vec<Type>, Box<Type>),
     Array(Vec<Type>),
+    Awaitable(Box<Type>),
 }
 
 #[derive(Debug, PartialEq)]

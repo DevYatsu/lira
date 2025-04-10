@@ -120,8 +120,9 @@ Return: Statement = {
 };
 
 FnDecl: Statement = {
-    "fn" skip <name:"identifier"> skip <params:("(" <Params> ")" skip)?> <ret:("->" skip <Type> skip)?> "{" skip <body:block_body> "}" => Statement::FnDecl {
+    <_async:"async"?> "fn" skip <name:"identifier"> skip <params:("(" <Params> ")" skip)?> <ret:("->" skip <Type> skip)?> "{" skip <body:block_body> "}" => Statement::FnDecl {
         name: name.to_owned(),
+        _async: _async.is_some(),
         params: params.unwrap_or(vec![]),
         return_type: ret,
         body: body,
@@ -255,7 +256,8 @@ TypesList: Vec<Type> = {
 
 pub Type: Type = {
     // <lhs:Type> "|" <rhs:BasicType> => Type::Union(Box::new(lhs), Box::new(rhs)),
-    BasicType,
+    "async" skip <BasicType> => Type::Awaitable(Box::new(<>)),
+    BasicType, 
 };
 
 BasicType: Type = {
@@ -268,6 +270,7 @@ BasicType: Type = {
 ExprOrClosure: Expr = {
     MatchExpr,
     Closure,
+    "await" skip <expr:Expr> => Expr::Awaitable(Box::new(expr)),
     Expr,
 };
 
@@ -429,6 +432,8 @@ extern {
         "typealias" => Token::TypeAlias,
         "return" => Token::Return,
         "=>" => Token::MatchReturn,
+        "async" => Token::Async,
+        "await" => Token::Await,
 
         // Identifiers
         "identifier" => Token::Ident(<String>),

@@ -5,7 +5,7 @@ fn main() {
     let args = std::env::args().collect::<Vec<_>>();
     let no_print = args.get(1).is_some();
 
-    let source = fs::read_to_string("examples/test.li")
+    let source = fs::read_to_string("examples/async.li")
         .expect("Failed to read file")
         .repeat(1000);
 
