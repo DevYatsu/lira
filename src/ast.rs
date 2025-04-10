@@ -1,170 +1,170 @@
 use crate::lexer::str_litteral::StringPart;
 
 #[derive(Debug, PartialEq)]
-pub struct Program {
-    pub statements: Vec<Statement>,
+pub struct Program<'i> {
+    pub statements: Vec<Statement<'i>>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Statement {
+pub enum Statement<'i> {
     FnDecl {
-        name: String,
+        name: &'i str,
         _async: bool,
-        params: Vec<(String, Option<Type>)>,
-        return_type: Option<Type>,
-        body: Vec<Statement>,
+        params: Vec<(&'i str, Option<Type<'i>>)>,
+        return_type: Option<Type<'i>>,
+        body: Vec<Statement<'i>>,
     },
     Let {
         atomic: bool,
         lazy: bool,
         mutable: bool,
-        name: LetName,
-        ty: Option<Type>,
-        value: Expr,
+        name: LetName<'i>,
+        ty: Option<Type<'i>>,
+        value: Expr<'i>,
     },
-    Match(Match),
+    Match(Match<'i>),
     Spawn {
-        body: Vec<Statement>,
-        with: Option<Expr>,
+        body: Vec<Statement<'i>>,
+        with: Option<Expr<'i>>,
     },
     ForLoop {
-        iterator: String,
-        range: Expr,
-        body: Vec<Statement>,
+        iterator: &'i str,
+        range: Expr<'i>,
+        body: Vec<Statement<'i>>,
     },
     WhileLoop {
-        condition: Expr,
-        body: Vec<Statement>,
+        condition: Expr<'i>,
+        body: Vec<Statement<'i>>,
     },
     If {
-        condition: Expr,
-        body: Vec<Statement>,
-        else_ifs: Vec<(Expr, Vec<Statement>)>,
-        else_body: Option<Vec<Statement>>,
+        condition: Expr<'i>,
+        body: Vec<Statement<'i>>,
+        else_ifs: Vec<(Expr<'i>, Vec<Statement<'i>>)>,
+        else_body: Option<Vec<Statement<'i>>>,
     },
-    Expr(Expr),
-    Return(Expr),
+    Expr(Expr<'i>),
+    Return(Expr<'i>),
     Break,
     TypeAlias {
-        name: String,
-        ty: Type,
+        name: &'i str,
+        ty: Type<'i>,
     },
     Struct {
-        name: String,
-        fields: Vec<(String, Type)>,
+        name: &'i str,
+        fields: Vec<(&'i str, Type<'i>)>,
     },
     Enum {
-        name: String,
-        variants: Vec<EnumVariant>,
+        name: &'i str,
+        variants: Vec<EnumVariant<'i>>,
     },
     // import stmt
     Use {
-        path: Vec<String>,
-        alias: Option<String>,
+        path: Vec<&'i str>,
+        alias: Option<&'i str>,
     },
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Match {
-    pub expr: Expr,
-    pub arms: Vec<MatchArm>,
+pub struct Match<'i> {
+    pub expr: Expr<'i>,
+    pub arms: Vec<MatchArm<'i>>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum LetName {
-    Ident(String),
-    ArrayDestructure(Vec<LetName>),
-    TupleDestructure(Vec<LetName>),
-    StructDestructure(String, Vec<(String, Option<String>)>),
+pub enum LetName<'i> {
+    Ident(&'i str),
+    ArrayDestructure(Vec<LetName<'i>>),
+    TupleDestructure(Vec<LetName<'i>>),
+    StructDestructure(&'i str, Vec<(&'i str, Option<&'i str>)>),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum EnumVariant {
-    Unit(String),
-    Tuple(String, Vec<Type>),
-    Struct(String, Vec<(String, Option<Type>)>),
+pub enum EnumVariant<'i> {
+    Unit(&'i str),
+    Tuple(&'i str, Vec<Type<'i>>),
+    Struct(&'i str, Vec<(&'i str, Option<Type<'i>>)>),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum EnumVariantData {
-    Tuple(Vec<Type>),
-    Struct(Vec<(String, Option<Type>)>),
+pub enum EnumVariantData<'i> {
+    Tuple(Vec<Type<'i>>),
+    Struct(Vec<(&'i str, Option<Type<'i>>)>),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct MatchArm {
-    pub pattern: Pattern,
-    pub body: Vec<Statement>,
-    pub guard: Option<Expr>,
+pub struct MatchArm<'i> {
+    pub pattern: Pattern<'i>,
+    pub body: Vec<Statement<'i>>,
+    pub guard: Option<Expr<'i>>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Pattern {
-    Literal(Literal),
-    Ident(String),
-    FunctionDestructor(String, Vec<String>),
-    StructLikeDestructor(String, Vec<(String, Option<String>)>),
+pub enum Pattern<'i> {
+    Literal(Literal<'i>),
+    Ident(&'i str),
+    FunctionDestructor(&'i str, Vec<&'i str>),
+    StructLikeDestructor(&'i str, Vec<(&'i str, Option<&'i str>)>),
     Wildcard,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Expr {
-    Literal(Literal),
-    Ident(String),
-    Array(Vec<Expr>),
-    Match(Box<Match>),
-    Awaitable(Box<Expr>),
+pub enum Expr<'i> {
+    Literal(Literal<'i>),
+    Ident(&'i str),
+    Array(Vec<Expr<'i>>),
+    Match(Box<Match<'i>>),
+    Awaitable(Box<Expr<'i>>),
 
-    // parenthesized expression is a tuple
-    Tuple(Vec<Expr>),
-    Binary(Box<Expr>, BinOp, Box<Expr>),
-    Pipe(Box<Expr>, Box<Expr>),
-    Call(Box<Expr>, Vec<Expr>),
-    Range(Box<Expr>, Box<Expr>),
-    Assign(Box<Expr>, BinOp, Box<Expr>),
-    Unary(UnaryOp, Box<Expr>),
-    FieldAccess(Box<Expr>, String),
-    Index(Box<Expr>, Box<Expr>),
-    Closure(Vec<(String, Option<Type>)>, Vec<Statement>),
+    // parenthesized expr<'i>ession is a tuple
+    Tuple(Vec<Expr<'i>>),
+    Binary(Box<Expr<'i>>, BinOp, Box<Expr<'i>>),
+    Pipe(Box<Expr<'i>>, Box<Expr<'i>>),
+    Call(Box<Expr<'i>>, Vec<Expr<'i>>),
+    Range(Box<Expr<'i>>, Box<Expr<'i>>),
+    Assign(Box<Expr<'i>>, BinOp, Box<Expr<'i>>),
+    Unary(UnaryOp, Box<Expr<'i>>),
+    FieldAccess(Box<Expr<'i>>, &'i str),
+    Index(Box<Expr<'i>>, Box<Expr<'i>>),
+    Closure(Vec<(&'i str, Option<Type<'i>>)>, Vec<Statement<'i>>),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Comment {
-    Line(String),
-    Block(String),
-    Doc(String),
+pub enum Comment<'i> {
+    Line(&'i str),
+    Block(&'i str),
+    Doc(&'i str),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Type {
-    Ident(String),
-    Tuple(Vec<Type>),
-    Function(Vec<Type>, Box<Type>),
-    AsyncFunction(Vec<Type>, Box<Type>),
-    Array(Vec<Type>),
-    Awaitable(Box<Type>),
+pub enum Type<'i> {
+    Ident(&'i str),
+    Tuple(Vec<Type<'i>>),
+    Function(Vec<Type<'i>>, Box<Type<'i>>),
+    AsyncFunction(Vec<Type<'i>>, Box<Type<'i>>),
+    Array(Vec<Type<'i>>),
+    Awaitable(Box<Type<'i>>),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Literal {
+pub enum Literal<'i> {
     Int(i32),
     Float(f64),
-    String(Vec<StringPart>),
+    String(Vec<StringPart<'i>>),
     Inf,
     Bool(bool),
 }
 
-impl From<i32> for Literal {
+impl From<i32> for Literal<'_> {
     fn from(i: i32) -> Self {
         Literal::Int(i)
     }
 }
-impl From<f64> for Literal {
+impl From<f64> for Literal<'_> {
     fn from(f: f64) -> Self {
         Literal::Float(f)
     }
 }
-impl From<bool> for Literal {
+impl From<bool> for Literal<'_> {
     fn from(b: bool) -> Self {
         Literal::Bool(b)
     }

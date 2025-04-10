@@ -1,53 +1,51 @@
-grammar;
+grammar<'i>;
 use crate::ast::*;
 use crate::lexer::{
     tokens::{LexingError, Token},
     str_litteral::StringPart,
 };
 
-
-Comma<T>: Vec<T> = { 
+Comma<T>: Vec<T> = {
     skip <mut v: (<T> "," skip)*> <e:T?> => match e {
         None => v,
         Some(e) => { v.push(e); v }
     }
 };
 
-Param: (String, Option<Type>) = {
-    <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name.to_owned(), ty),
+Param: (&'i str, Option<Type<'i>>) = {
+    <name:"identifier"> skip <ty:(":" skip <Type> skip)?> => (name, ty),
 };
-Arg: Expr = {
+Arg: Expr<'i> = {
     <expr:ExprOrClosure> skip => expr,
 };
 
-Params: Vec<(String, Option<Type>)> = { 
+Params: Vec<(&'i str, Option<Type<'i>>)> = {
     <params: Comma<Param>> => params,
 };
-Args: Vec<Expr> = { 
+Args: Vec<Expr<'i>> = {
     <args: Comma<Arg>> => args,
 };
 
-
-block_body: Vec<Statement> = (<Statement> skip)*;
+block_body: Vec<Statement<'i>> = (<Statement> skip)*;
 skip: () = unique_skip*;
 unique_skip: () = {"line_end" => (), Comment => ()};
 
-Comment: Comment = {
+Comment: Comment<'i> = {
     <"line_comment"> => Comment::Line(<>),
     <"block_comment"> => Comment::Block(<>),
     <"doc_comment"> => Comment::Doc(<>),
 };
 
-Comments: Vec<Comment> = {
+Comments: Vec<Comment<'i>> = {
     <comments:Comment*> => comments,
 };
 
-pub Program: Program = {
+pub Program: Program<'i> = {
     skip <stmts: block_body>  => Program { statements: stmts },
 };
 
 // Statements
-Statement: Statement = {
+Statement: Statement<'i> = {
     Let,
     FnDecl,
     Break,
@@ -65,73 +63,73 @@ Statement: Statement = {
     ExprStmt
 };
 
-TypeAlias: Statement = {
+TypeAlias: Statement<'i> = {
     "typealias" <name:"identifier"> "=" <ty:Type> => Statement::TypeAlias {
-        name: name.to_owned(),
+        name: name,
         ty,
     },
 };
 
-Use: Statement = {
+Use: Statement<'i> = {
     "use" <path:Path> <alias:("as" <"identifier">)?> => Statement::Use {
         path,
-        alias: alias.map(|s| s.to_owned()), // Convert Option<&str> to Option<String>
+        alias: alias.map(|s| s), // Convert Option<&str> to Option<String>
     }
 };
 
 // Rust-like path (e.g., "foo::bar::baz" -> Vec["foo", "bar", "baz"])
-Path: Vec<String> = {
+Path: Vec<&'i str> = {
     <head:"identifier"> "::" <tail:Path> => {
-        let mut vec = vec![head.to_owned()];
+        let mut vec = vec![head];
         vec.extend(tail);
         vec
     },
     <id:"identifier"> => {
         let mut vec = Vec::new();
-        vec.push(id.to_owned());
+        vec.push(id);
         vec
     },
 };
 
 
-Struct: Statement = {
+Struct: Statement<'i> = {
     "struct" skip <name:"identifier"> "{" <fields:Comma<StructField>> "}" => Statement::Struct {
-        name: name.to_owned(),
+        name: name,
         fields,
     },
 };
 
-StructField: (String, Type) = {
-    <name:"identifier"> skip ":" skip <ty:Type> skip => (name.to_owned(), ty),
+StructField: (&'i str, Type<'i>) = {
+    <name:"identifier"> skip ":" skip <ty:Type> skip => (name, ty),
 };
 
-Enum: Statement = {
+Enum: Statement<'i> = {
     "enum" skip <name:"identifier"> skip "{" <variants:Comma<EnumVariant>> "}" => Statement::Enum {
-        name: name.to_owned(),
+        name: name,
         variants,
     },
 };
 
-EnumVariant: EnumVariant = {
+EnumVariant: EnumVariant<'i> = {
     <name:"identifier"> <data:(skip <EnumVariantData>)?> skip => match data {
-        None => EnumVariant::Unit(name.to_owned()),
-        Some(EnumVariantData::Tuple(types)) => EnumVariant::Tuple(name.to_owned(), types),
-        Some(EnumVariantData::Struct(fields)) => EnumVariant::Struct(name.to_owned(), fields),
+        None => EnumVariant::Unit(name),
+        Some(EnumVariantData::Tuple(types)) => EnumVariant::Tuple(name, types),
+        Some(EnumVariantData::Struct(fields)) => EnumVariant::Struct(name, fields),
     },
 };
 
-EnumVariantData: EnumVariantData = {
+EnumVariantData: EnumVariantData<'i> = {
     "(" <types:TypesList> ")" => EnumVariantData::Tuple(types),
     "{" <fields:Params> "}" => EnumVariantData::Struct(fields),
 };
 
-Return: Statement = {
+Return: Statement<'i> = {
     "return" skip <expr:ExprOrClosure> => Statement::Return(expr),
 };
 
-FnDecl: Statement = {
+FnDecl: Statement<'i> = {
     <_async:"async"?> "fn" skip <name:"identifier"> skip <params:("(" <Params> ")" skip)?> <ret:("->" skip <Type> skip)?> "{" skip <body:block_body> "}" => Statement::FnDecl {
-        name: name.to_owned(),
+        name: name,
         _async: _async.is_some(),
         params: params.unwrap_or(vec![]),
         return_type: ret,
@@ -140,7 +138,7 @@ FnDecl: Statement = {
 };
 
 
-Let: Statement = {
+Let: Statement<'i> = {
     "let" <modifiers:(skip <Modifier>)*> skip <name:LetName> <ty:(":" skip <Type> skip)?> "=" skip <value:ExprOrClosure> => Statement::Let {
         atomic: modifiers.contains(&"atomic"),
         lazy: modifiers.contains(&"lazy"),
@@ -151,18 +149,18 @@ Let: Statement = {
     }
 };
 
-LetName: LetName = {
+LetName: LetName<'i> = {
     <name:"identifier"> skip "{" <fields:Comma<StructFieldDestructure>> "}" => LetName::StructDestructure(
-        name.to_owned(),
+        name,
         fields,
     ),
-    <name:"identifier"> => LetName::Ident(name.to_owned()),
+    <name:"identifier"> => LetName::Ident(name),
     "(" <names:Comma<LetName>> ")" => LetName::TupleDestructure(names),
     "[" <names:Comma<LetName>> "]" => LetName::ArrayDestructure(names),
 };
 
-StructFieldDestructure: (String, Option<String>) = {
-    <name:"identifier"> <new_name:(skip ":" skip <"identifier">)?> => (name.to_owned(), new_name.map(|s| s.to_owned())),
+StructFieldDestructure: (&'i str, Option<&'i str>) = {
+    <name:"identifier"> <new_name:(skip ":" skip <"identifier">)?> => (name, new_name.map(|s| s)),
 };
 
 Modifier: &'static str =  {
@@ -171,7 +169,7 @@ Modifier: &'static str =  {
     "mut" => "mut",
 };
 
-ForLoop: Statement = {
+ForLoop: Statement<'i> = {
     "for" skip <iterator:"identifier"> skip "in" skip <range:Expr> skip "{" skip <body:block_body> "}" => Statement::ForLoop {
         iterator,
         range,
@@ -179,19 +177,19 @@ ForLoop: Statement = {
     },
 };
 
-WhileLoop: Statement = {
+WhileLoop: Statement<'i> = {
     "while" skip <condition:Expr> skip "{" skip <body:block_body> "}" => Statement::WhileLoop {
         condition,
         body,
     },
 };
 
-Break: Statement = {
+Break: Statement<'i> = {
     "break" => Statement::Break,
 };
 
 
-Spawn: Statement = {
+Spawn: Statement<'i> = {
     "spawn" skip <with:("with" skip <Expr> skip)?>  "{" skip <body:block_body> "}" => Statement::Spawn {
         body,
         with,
@@ -199,23 +197,23 @@ Spawn: Statement = {
 };
 
 
-Match: Match = {
+Match: Match<'i> = {
     "match" skip <expr:Expr> skip "{" <arms:MatchArm*> skip "}" => Match {
         expr,
         arms,
     },
 };
 
-MatchExpr: Expr = {
+MatchExpr: Expr<'i> = {
    Match => Expr::Match(Box::new(<>))
 }
 
-MatchStmt: Statement = {
+MatchStmt: Statement<'i> = {
     Match => Statement::Match(<>)
 }
 
 // need to add destructuring of enums
-MatchArm: MatchArm = {
+MatchArm: MatchArm<'i> = {
     skip <pattern:Pattern> skip <guard:("if" skip <Expr> skip)?> "=>" skip <body:MatchBody>
     => MatchArm {
         pattern,
@@ -224,13 +222,13 @@ MatchArm: MatchArm = {
     },
 };
 
-MatchBody: Vec<Statement> = {
+MatchBody: Vec<Statement<'i>> = {
     <expr:Expr> skip "," => vec![Statement::Expr(expr)], 
     "{" skip <stmts:block_body> "}" => stmts,
     "break" skip "," => vec![Statement::Break],
 };
 
-Pattern: Pattern = {
+Pattern: Pattern<'i> = {
     <lit:Literal> => Pattern::Literal(lit),
     <id:"identifier"> "(" <args:Comma<"identifier">> ")" => Pattern::FunctionDestructor(id, args),
     <id:"identifier"> "{" <fields:Comma<StructFieldDestructure>> "}" => Pattern::StructLikeDestructor(id, fields),
@@ -238,7 +236,7 @@ Pattern: Pattern = {
     "_" => Pattern::Wildcard,
 };
 
-If: Statement = {
+If: Statement<'i> = {
     "if" skip <condition:Expr> skip "{" skip <body:block_body> "}" <else_ifs:ElseIf*> <else_body:Else?>
     => Statement::If {
         condition,
@@ -248,36 +246,36 @@ If: Statement = {
     },
 };
 
-ElseIf: (Expr, Vec<Statement>) = {
+ElseIf: (Expr<'i>, Vec<Statement<'i>>) = {
     "elsif" skip <condition:Expr> skip "{" skip <body:block_body> "}" => (condition, body),
     "else" skip "if" skip <condition:Expr> skip "{" skip <body:block_body> "}" => (condition, body),
 };
 
-Else: Vec<Statement> = {
+Else: Vec<Statement<'i>> = {
     "else" skip "{" skip <body:block_body> "}" => body,
 };
 
-TypeArg: Type = {
+TypeArg: Type<'i> = {
     <ty:Type> skip => ty,
 };
-TypesList: Vec<Type> = { 
+TypesList: Vec<Type<'i>> = { 
     <args: Comma<TypeArg>> => args,
 };
 
-pub Type: Type = {
+pub Type: Type<'i> = {
     // <lhs:Type> "|" <rhs:BasicType> => Type::Union(Box::new(lhs), Box::new(rhs)),
     "async" skip <BasicType> => Type::Awaitable(Box::new(<>)),
     BasicType, 
 };
 
-BasicType: Type = {
+BasicType: Type<'i> = {
     "[" <ty:TypesList> "]" => Type::Array(ty),
     "(" <ty:TypesList> ")" => Type::Tuple(ty),
     "(" <args:TypesList> ")" ":" skip <ret:Type> => Type::Function(args, Box::new(ret)),
-    <val:"identifier"> => Type::Ident(val.to_owned()),
+    <val:"identifier"> => Type::Ident(val),
 }
 
-ExprOrClosure: Expr = {
+ExprOrClosure: Expr<'i> = {
     MatchExpr,
     Closure,
     "await" skip <expr:Expr> => Expr::Awaitable(Box::new(expr)),
@@ -286,7 +284,7 @@ ExprOrClosure: Expr = {
 
 // todo! parse strings
 // Expressions in Lira
-pub Expr: Expr = {
+pub Expr: Expr<'i> = {
     // Precedence levels from lowest to highest
 
     #[precedence(level = "11")] #[assoc(side = "left")]
@@ -339,7 +337,7 @@ pub Expr: Expr = {
     PostfixExpr,
 };
 
-ExprStmt: Statement = {
+ExprStmt: Statement<'i> = {
     <lhs:LValue> <op:AssignOp> skip <rhs:Expr> => Statement::Expr(Expr::Assign(Box::new(lhs), op, Box::new(rhs))),
     <AllowedAloneExpr> => Statement::Expr(<>),
 };
@@ -358,34 +356,34 @@ AssignOp: BinOp = {
     ">>=" => BinOp::ShiftRight,
 };
 
-AllowedAloneExpr: Expr = {
-    <base:AllowedAloneExpr> "." <field:"identifier"> "("  <args:Args> ")" => Expr::Call(Box::new(Expr::FieldAccess(Box::new(base), field.to_owned())), args),
+AllowedAloneExpr: Expr<'i> = {
+    <base:AllowedAloneExpr> "." <field:"identifier"> "("  <args:Args> ")" => Expr::Call(Box::new(Expr::FieldAccess(Box::new(base), field)), args),
     <base:AllowedAloneExpr> "(" <args:Args> ")"  => Expr::Call(Box::new(base), args),
     <base:LValue> "(" <args:Args> ")"  => Expr::Call(Box::new(base), args),
 };
 
-LValue: Expr = {
+LValue: Expr<'i> = {
     <base:LValue> "[" skip <index:Expr> skip "]" => Expr::Index(Box::new(base), Box::new(index)),
-    <base:LValue> "." skip <field:"identifier">  => Expr::FieldAccess(Box::new(base), field.to_owned()),
-    <val:"identifier"> => Expr::Ident(val.to_owned()),
+    <base:LValue> "." skip <field:"identifier">  => Expr::FieldAccess(Box::new(base), field),
+    <val:"identifier"> => Expr::Ident(val),
 };
 
 // Postfix expressions (field access and function calls)
-PostfixExpr: Expr = {
-    <base:PostfixExpr> "." skip <field:"identifier"> => Expr::FieldAccess(Box::new(base), field.to_owned()),
+PostfixExpr: Expr<'i> = {
+    <base:PostfixExpr> "." skip <field:"identifier"> => Expr::FieldAccess(Box::new(base), field),
     <base:PostfixExpr> "(" <args:Args> ")" => Expr::Call(Box::new(base), args),
     Term,
 };
 
-pub Term: Expr = {
+pub Term: Expr<'i> = {
     <val:Literal> => Expr::Literal(val),
     "[" <args:Args> "]" => Expr::Array(args),
     "(" <args:Args> ")" => Expr::Tuple(args),
-    <val:"identifier"> => Expr::Ident(val.to_owned()),
+    <val:"identifier"> => Expr::Ident(val),
 };
 
 // Primary Terms (Literals, Variables, Parentheses)
-pub Literal: Literal = {
+pub Literal: Literal<'i> = {
     <val:"int"> => Literal::Int(val),
     <val:"float"> => Literal::Float(val),
     <val:"string"> => Literal::String(val),
@@ -397,13 +395,13 @@ pub Literal: Literal = {
     "inf" => Literal::Inf,
 };
 
-Closure: Expr = {
+Closure: Expr<'i> = {
     "|" <params:Params> "|" skip <body:ClosureBody>  => Expr::Closure(
         params,
         body,
     ),
 };
-ClosureBody: Vec<Statement> = {
+ClosureBody: Vec<Statement<'i>> = {
     "{" skip <body:block_body> "}" => body,
     <Return> => vec![<>],
     <Expr> => vec![Statement::Expr(<>)],
@@ -413,7 +411,7 @@ extern {
   type Location = usize;
   type Error = LexingError;
 
-    enum Token {
+    enum Token<'i> {
         // Keywords
         "fn" => Token::Fn,
         "let" => Token::Let,
@@ -448,7 +446,7 @@ extern {
         "await" => Token::Await,
 
         // Identifiers
-        "identifier" => Token::Ident(<String>),
+        "identifier" => Token::Ident(<&'i str>),
 
         // Literals
         "int" => Token::Int(<i32>),
@@ -456,7 +454,7 @@ extern {
         "binary" => Token::Binary(<i32>),
         "octal" => Token::Octal(<i32>),
         "hex" => Token::Hex(<i32>),
-        "string" => Token::String(<Vec<StringPart>>),
+        "string" => Token::String(<Vec<StringPart<'i>>>),
 
         // Symbols and operators
         ":" => Token::Colon,
@@ -517,9 +515,9 @@ extern {
         "|>" => Token::Pipe,
 
         // Comments and whitespace
-        "line_comment" => Token::LineComment(<String>),
-        "block_comment" => Token::BlockComment(<String>),
-        "doc_comment" => Token::DocComment(<String>),
+        "line_comment" => Token::LineComment(<&'i str>),
+        "block_comment" => Token::BlockComment(<&'i str>),
+        "doc_comment" => Token::DocComment(<&'i str>),
         "line_end" => Token::LineEnd,
     }
 }
