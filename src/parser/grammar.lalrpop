@@ -332,6 +332,7 @@ pub Expr: Expr = {
     #[precedence(level = "1")] #[assoc(side = "right")]
     "!" <rhs:Expr> => Expr::Unary(UnaryOp::Not, Box::new(rhs)),
     "-" <rhs:Expr> => Expr::Unary(UnaryOp::Minus, Box::new(rhs)),
+    "+" <rhs:Expr> => Expr::Unary(UnaryOp::Plus, Box::new(rhs)),
     "~" <rhs:Expr> => Expr::Unary(UnaryOp::BitNot, Box::new(rhs)),
 
     #[precedence(level = "0")]

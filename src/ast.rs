@@ -196,5 +196,6 @@ pub enum BinOp {
 pub enum UnaryOp {
     Not,
     Minus,
+    Plus,
     BitNot,
 }
