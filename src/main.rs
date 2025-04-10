@@ -26,7 +26,6 @@ fn main() {
         // lexer took 88ms to parser 1000x output.li (around 30_000_000 chars/sec)
         fs::read_to_string("output.li")
             .expect("could not read output.li")
-            .repeat(1000)
     };
 
     let char_count = source.len();
@@ -60,19 +59,17 @@ fn parsing(lexer: Lexer<'_>, print: bool) -> () {
     let result = parser.parse(lexer).unwrap();
 
     let interner = Interner::as_rc_refcell();
-    let lowered = LoweringContext::new(interner);
-    let result = lowered.lower_program(&result);
+    let mut lowered = LoweringContext::new(interner);
+    let result = lowered.lower_program(result);
 
-    if let Ok(result) = result {
-        if print {
-            println!("{:?}", result);
-            // for t in result.statements {
-            //     println!("{:?}", t);
-            // }
-        }
-    } else {
+
+    if print {
         println!("{:?}", result);
+        // for t in result.statements {
+        //     println!("{:?}", t);
+        // }
     }
+
 }
 
 fn minifying(lexer: Lexer<'_>) -> () {
